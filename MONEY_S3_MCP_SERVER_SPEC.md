@@ -9,7 +9,7 @@
 | Aspect | Opus | Sonnet | Haiku |
 |--------|------|--------|-------|
 | **Depth** | Most comprehensive — ~80 tools, RefInput patterns, DefinitionXMLTransfer defaults, scalar types | Good spec — clear tool definitions, GraphQL fragments, codegen | Tutorial-level — 4 basic tools, working code skeleton |
-| **Auth** | OAuth 2.0 (Client Credentials + ROPC flows), AgendaGuid header | Bearer token only (no OAuth details) | Bearer API key only |
+| **Auth** | OAuth 2.0 (Client Credentials + ROPC flows), AgendaId header | Bearer token only (no OAuth details) | Bearer API key only |
 | **Async Mutations** | Detailed ImportPromise + polling pattern | Well-explained ImportPromise polling | Missing entirely |
 | **Pagination** | Correct: offset-based (skip/take) with CollectionSegment | Correct: skip/take + CollectionSegment | Incorrect: uses edges/node (Relay cursor pattern) |
 | **Filter Details** | String = eq/neq only, full operator reference | Good abstraction of simple params → complex where | Basic filter building |
@@ -43,7 +43,7 @@ An MCP (Model Context Protocol) server in TypeScript that exposes the Money S3 a
 | Reads | Synchronous — queries return data immediately |
 | Writes | **Asynchronous** — mutations return `ImportPromise` with GUID, result obtained via `importStatus` query |
 | Authentication | OAuth 2.0 (Client Credentials or Resource Owner Password Credentials) |
-| Agenda | Identified by GUID, passed in HTTP header `AgendaGuid` |
+| Agenda | Identified by GUID, passed in HTTP header `AgendaId` |
 | Pagination | Offset-based (`skip`/`take`), NOT cursor-based |
 | String filtering | `eq`/`neq` only — no `contains`, `startsWith`, or regex |
 
@@ -81,7 +81,7 @@ money-s3-mcp-server/
 │   ├── auth/
 │   │   └── oauth.ts                 # OAuth 2.0 token management (obtain, cache, refresh)
 │   ├── graphql/
-│   │   ├── client.ts                # GraphQL client wrapper with auth + AgendaGuid headers
+│   │   ├── client.ts                # GraphQL client wrapper with auth + AgendaId headers
 │   │   ├── queries/                 # GraphQL query strings organized by domain
 │   │   │   ├── invoices.ts
 │   │   │   ├── companies.ts
@@ -249,10 +249,10 @@ grant_type=password
 ```
 Authorization: Bearer {access_token}
 Content-Type: application/json
-AgendaGuid: {AGENDA_GUID}
+AgendaId: {AGENDA_GUID}
 ```
 
-The `AgendaGuid` header is **mandatory** for all communication with a specific agenda.
+The `AgendaId` header is **mandatory** for all communication with a specific agenda.
 
 ---
 
@@ -273,7 +273,7 @@ class MoneyS3Client {
 ```
 
 The client must:
-- Automatically attach `Authorization` and `AgendaGuid` headers
+- Automatically attach `Authorization` and `AgendaId` headers
 - Parse GraphQL errors and return human-readable messages
 - Support configurable timeout (default 30s)
 - Log requests for debugging (optional, controlled by env)
@@ -1105,7 +1105,7 @@ async function queryWithRetry<T>(
 4. **Username must NOT contain spaces** — validate in docs
 5. **Default DefinitionXMLTransfer** — always use schema defaults, don't override
 6. **Pagination is offset-based** (skip/take), not cursor-based
-7. **AgendaGuid** must be in HTTP header of every request
+7. **AgendaId** must be in HTTP header of every request
 8. **CompanyInput dual use** — used as input for `createCompany` AND inline as `partnerAddress`/`deliveryAddress` on invoices (identifies partner via `identificationNumber` or `guid`)
 9. **Year parameter** — filters and delete operations often accept `year` to scope to a specific accounting year
 10. **Cancel enum on invoices** — documents can have states `NONE`, `CANCELLING`, `CANCELLED` — filter appropriately
