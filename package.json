@@ -8,7 +8,7 @@
     "money-s3-mcp": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/assets dist/assets",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "lint": "eslint src/",

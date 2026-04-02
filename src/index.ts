@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -104,6 +107,13 @@ function checkAuth(
 }
 
 // ---------------------------------------------------------------------------
+// Favicon
+// ---------------------------------------------------------------------------
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const faviconBuffer = readFileSync(join(__dirname, "assets", "favicon.png"));
+
+// ---------------------------------------------------------------------------
 // HTTP transport
 // ---------------------------------------------------------------------------
 
@@ -131,6 +141,16 @@ async function startHttpTransport(server: McpServer, config: Config): Promise<vo
     if (url.pathname === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok" }));
+      return;
+    }
+
+    // Favicon
+    if (url.pathname === "/favicon.ico" || url.pathname === "/favicon.png") {
+      res.writeHead(200, {
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=86400",
+      });
+      res.end(faviconBuffer);
       return;
     }
 

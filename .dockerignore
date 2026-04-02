@@ -8,7 +8,4 @@ dist
 .DS_Store
 .claude
 schema.graphql
-CLAUDE.md
-MONEY_S3_MCP_SERVER_SPEC.md
-README.md
 *.md
