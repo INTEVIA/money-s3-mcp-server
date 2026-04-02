@@ -17,4 +17,4 @@ services:
       - MONEY_S3_LOCAL=${MONEY_S3_LOCAL:-false}
       - IMPORT_POLL_TIMEOUT_MS=${IMPORT_POLL_TIMEOUT_MS:-30000}
       - IMPORT_POLL_INTERVAL_MS=${IMPORT_POLL_INTERVAL_MS:-1000}
-    restart: unless-stopped
+    restart: always

@@ -173,6 +173,25 @@ docker build -t money-s3-mcp .
 docker run -d -p 3000:3000 --env-file .env money-s3-mcp
 ```
 
+### Automaticky start po rebootu
+
+Kontejner ma `restart: always`, takze se automaticky spusti po restartu. Predpoklad: Docker daemon musi byt zapnuty pri startu systemu.
+
+```bash
+# Overeni, ze Docker startuje pri bootu (systemd)
+sudo systemctl enable docker
+
+# Overeni, ze kontejner bezi a ma restart policy "always"
+docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' money-s3-mcp-server-money-s3-mcp-1
+# → always
+```
+
+Pokud pouzivate `docker run` misto Compose, pridejte `--restart always`:
+
+```bash
+docker run -d --restart always -p 3000:3000 --env-file .env money-s3-mcp
+```
+
 ### Vlastnosti Docker obrazu
 
 - **Multi-stage build** — prvni faze kompiluje TypeScript, druha obsahuje jen produkci
@@ -180,6 +199,7 @@ docker run -d -p 3000:3000 --env-file .env money-s3-mcp
 - **Non-root uzivatel** — bezi pod `mcpuser` (UID 1001)
 - **HEALTHCHECK** — Docker automaticky kontroluje `/health` kazdych 30s
 - **Graceful shutdown** — reaguje na SIGTERM (Docker stop)
+- **restart: always** — kontejner se automaticky spusti po rebootu i po padu
 
 ## Transporty
 
