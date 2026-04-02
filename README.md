@@ -109,6 +109,25 @@ Po restartu Claude Desktop se server automaticky spusti a zpristupni 131 nastroj
 
 ## Pouziti s Claude Code
 
+### Pres CLI (doporuceno)
+
+```bash
+# Stdio (lokalni vyvoj)
+claude mcp add money-s3 node /cesta/k/money-s3-mcp-server/dist/index.js \
+  --transport stdio \
+  --env MONEY_S3_DOMAIN=moje-domena \
+  --env MONEY_S3_CLIENT_ID=vas-client-id \
+  --env MONEY_S3_CLIENT_SECRET=vas-client-secret \
+  --env MONEY_S3_APP_ID=vase-app-id
+
+# HTTP (Docker / remote server)
+claude mcp add money-s3 https://vas-server.example.com/mcp \
+  --transport http \
+  --header "Authorization: Bearer VAS_MCP_AUTH_TOKEN"
+```
+
+### Rucne pres settings.json
+
 Pridejte do `.claude/settings.json` v projektu nebo globalne:
 
 ```json
