@@ -137,6 +137,7 @@ MONEY_S3_APP_ID=xxxxxxxx                  # App ID (obtain at money.cz, used in 
 
 # Optional — agenda (if not set, use switch_agenda tool to select)
 MONEY_S3_AGENDA_GUID=                     # Default agenda GUID (for single-agenda setups)
+MONEY_S3_LEGISLATION=                     # CZ or SK (auto-detected if not set)
 
 # Optional — for Resource Owner Password Credentials flow
 MONEY_S3_USERNAME=                         # Username (no spaces!)
@@ -174,6 +175,7 @@ const configSchema = z.object({
   transport: z.enum(["stdio", "http"]).default("stdio"),
   port: z.number().int().positive().default(3000),
   authToken: z.string().optional(),
+  legislation: z.enum(["CZ", "SK"]).optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -193,6 +195,7 @@ export function loadConfig(): Config {
     transport: process.env.MCP_TRANSPORT || "stdio",
     port: parseInt(process.env.MCP_PORT || "3000", 10),
     authToken: process.env.MCP_AUTH_TOKEN || undefined,
+    legislation: process.env.MONEY_S3_LEGISLATION || undefined,
   });
 }
 ```
@@ -277,6 +280,27 @@ The client must:
 - Parse GraphQL errors and return human-readable messages
 - Support configurable timeout (default 30s)
 - Log requests for debugging (optional, controlled by env)
+- **Auto-detect CZ/SK legislation** per agenda and strip SK-only fields from queries (see section below)
+
+### CZ/SK Legislation Detection (helpers/legislation.ts)
+
+Money S3 supports Czech (CZ) and Slovak (SK) legislation. The schema defines `@legislationDirective(legislationType: LegislationType)` with enum `CZ | SK`, but directives are NOT applied in the SDL — restrictions are enforced at runtime. Querying an SK-only field on a CZ agenda returns: `"Member is available only for 'Sk' legislation"`.
+
+**15 SK-only fields exist in the schema:**
+`vatPurpose`, `vatIdentificationNumberSk`, `isSimplifiedTaxReceipt`, `vatMode`, `originalDocumentNumber`, `roundingOfPayment`, `withoutVatIdentificationNumber`, `insured`, `shippingPayroll`, `shippingPayment`, `shippingClass`, `shippingListServices`, `creditNoteVatClassification`, `isSentToFiscal`, `shippingCode`
+
+No CZ-only fields exist — all legislation-restricted fields are SK-only.
+
+**Detection flow:**
+1. First query to an agenda includes all fields (assumes SK)
+2. If API returns legislation error → mark agenda as CZ in per-agenda cache, strip SK fields, retry
+3. Subsequent queries use cached legislation (no trial-and-error)
+4. Optional `MONEY_S3_LEGISLATION=CZ|SK` env var forces legislation globally
+
+**Implementation:**
+- `helpers/legislation.ts` — cache, detection, `stripSkFields()` (regex-based removal of SK fields from query strings)
+- `MoneyS3Client.executeRequest()` catches legislation errors, calls `setLegislation(agendaGuid, "CZ")`, retries with stripped query
+- `MoneyS3Client.applyLegislationFilter()` pre-strips fields for known CZ agendas
 
 ---
 
@@ -835,7 +859,7 @@ server.tool(
 | `update_wage` | `mutation updateWage(...)` |
 | `delete_wage` | `mutation deleteWage(...)` |
 
-**Legislation note:** Schema uses `@legislationDirective(legislationType: CZ | SK)`. Fields with this directive are valid only for the corresponding country. Note this in relevant tool descriptions.
+**Legislation note:** Some fields are SK-only (e.g. `vatPurpose`, `isSimplifiedTaxReceipt`). The server auto-detects CZ/SK per agenda and strips SK fields from queries — see section 6 "CZ/SK Legislation Detection".
 
 ### 13.9 Agendas, Years, Job Orders (tools/agenda.ts)
 
@@ -1109,7 +1133,7 @@ async function queryWithRetry<T>(
 8. **CompanyInput dual use** — used as input for `createCompany` AND inline as `partnerAddress`/`deliveryAddress` on invoices (identifies partner via `identificationNumber` or `guid`)
 9. **Year parameter** — filters and delete operations often accept `year` to scope to a specific accounting year
 10. **Cancel enum on invoices** — documents can have states `NONE`, `CANCELLING`, `CANCELLED` — filter appropriately
-11. **Legislation directive** — some schema fields are annotated `@legislationDirective(legislationType: CZ | SK)` — valid only for the respective country
+11. **CZ/SK legislation** — 15 schema fields are SK-only (e.g. `vatPurpose`, `vatIdentificationNumberSk`). The server auto-detects per agenda and strips SK fields from queries for CZ agendas. Override with `MONEY_S3_LEGISLATION=CZ|SK` env var. See section 6 for details.
 
 ---
 

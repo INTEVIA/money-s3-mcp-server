@@ -14,6 +14,7 @@ const configSchema = z.object({
   transport: z.enum(["stdio", "http"]).default("stdio"),
   port: z.number().int().positive().default(3000),
   authToken: z.string().optional(),
+  legislation: z.enum(["CZ", "SK"]).optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -33,5 +34,6 @@ export function loadConfig(): Config {
     transport: process.env.MCP_TRANSPORT || "stdio",
     port: parseInt(process.env.MCP_PORT || "3000", 10),
     authToken: process.env.MCP_AUTH_TOKEN || undefined,
+    legislation: process.env.MONEY_S3_LEGISLATION || undefined,
   });
 }

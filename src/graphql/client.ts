@@ -2,6 +2,13 @@ import { GraphQLClient } from "graphql-request";
 import type { Config } from "../config.js";
 import type { OAuthManager } from "../auth/oauth.js";
 import { waitForImport, type ImportResult } from "../helpers/import-poller.js";
+import {
+  getLegislation,
+  setLegislation,
+  isLegislationError,
+  stripSkFields,
+  type LegislationType,
+} from "../helpers/legislation.js";
 
 /** Default request timeout: 30 seconds. */
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -34,14 +41,27 @@ export class MoneyS3Client {
   }
 
   /**
-   * Execute a GraphQL query with automatic auth, timeout, and retry on 401.
+   * Get the detected legislation type for the active agenda.
+   */
+  getLegislationType(): LegislationType | undefined {
+    if (!this.activeAgendaGuid) return undefined;
+    return getLegislation(this.activeAgendaGuid);
+  }
+
+  /**
+   * Execute a GraphQL query with automatic auth, timeout, retry on 401,
+   * and legislation-aware SK field stripping.
+   *
+   * On first call for an agenda, assumes SK (full fields). If the API returns
+   * a legislation error, marks the agenda as CZ, strips SK fields, and retries.
    */
   async query<T>(
     queryStr: string,
     variables?: Record<string, unknown>,
   ): Promise<T> {
     await this.updateHeaders();
-    return this.executeRequest<T>(queryStr, variables);
+    const effectiveQuery = this.applyLegislationFilter(queryStr);
+    return this.executeRequest<T>(effectiveQuery, queryStr, variables);
   }
 
   /**
@@ -53,11 +73,23 @@ export class MoneyS3Client {
     variables?: Record<string, unknown>,
   ): Promise<T> {
     await this.updateHeadersWithoutAgenda();
-    return this.executeRequest<T>(queryStr, variables);
+    return this.executeRequest<T>(queryStr, queryStr, variables);
+  }
+
+  /**
+   * Strip SK-only fields if the active agenda is known to be CZ.
+   * If legislation is unknown (first call), return the full query (try SK first).
+   */
+  private applyLegislationFilter(queryStr: string): string {
+    if (!this.activeAgendaGuid) return queryStr;
+    const leg = getLegislation(this.activeAgendaGuid);
+    if (leg === "CZ") return stripSkFields(queryStr);
+    return queryStr; // SK or unknown — send full query
   }
 
   private async executeRequest<T>(
     queryStr: string,
+    originalQueryStr: string,
     variables?: Record<string, unknown>,
   ): Promise<T> {
     const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
@@ -68,6 +100,7 @@ export class MoneyS3Client {
         signal,
       });
     } catch (error: unknown) {
+      // On 401, force token refresh and retry once
       if (this.isAuthError(error)) {
         await this.updateHeadersWithoutAgenda(true);
         const retrySignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
@@ -77,6 +110,22 @@ export class MoneyS3Client {
           signal: retrySignal,
         });
       }
+
+      // On legislation error, mark agenda as CZ, strip SK fields, and retry
+      if (this.activeAgendaGuid && isLegislationError(error)) {
+        setLegislation(this.activeAgendaGuid, "CZ");
+        console.error(
+          `Agenda ${this.activeAgendaGuid} detekována jako CZ legislativa, opakuji dotaz bez SK polí`,
+        );
+        const czQuery = stripSkFields(originalQueryStr);
+        const retrySignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+        return await this.graphqlClient.request<T>({
+          document: czQuery,
+          variables,
+          signal: retrySignal,
+        });
+      }
+
       throw this.formatError(error);
     }
   }

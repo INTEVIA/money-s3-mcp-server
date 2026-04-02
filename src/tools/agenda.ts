@@ -50,26 +50,35 @@ export function registerAgendaTools(
 
   server.tool(
     "switch_agenda",
-    "Přepne aktivní agendu (firmu). Všechny následující operace budou pracovat s touto agendou.",
+    "Přepne aktivní agendu (firmu). Všechny následující operace budou pracovat s touto agendou. Legislativa (CZ/SK) se detekuje automaticky při prvním dotazu.",
     {
       agendaGuid: z.string().uuid().describe("GUID agendy (získáte z list_agendas)"),
     },
     withErrorHandler(async (params) => {
       client.setAgendaGuid(params.agendaGuid);
-      return toolSuccess({ agendaGuid: params.agendaGuid, message: `Agenda přepnuta na ${params.agendaGuid}` });
+      const legislation = client.getLegislationType();
+      return toolSuccess({
+        agendaGuid: params.agendaGuid,
+        legislation: legislation ?? "nedetekována (zjistí se při prvním dotazu)",
+        message: `Agenda přepnuta na ${params.agendaGuid}`,
+      });
     }),
   );
 
   server.tool(
     "get_current_agenda",
-    "Zobrazí aktuálně nastavenou agendu (GUID)",
+    "Zobrazí aktuálně nastavenou agendu (GUID) a detekovanou legislativu (CZ/SK)",
     {},
     withErrorHandler(async () => {
       const guid = client.getAgendaGuid();
       if (!guid) {
         return toolError("Žádná agenda není nastavena. Použijte switch_agenda.");
       }
-      return toolSuccess({ agendaGuid: guid });
+      const legislation = client.getLegislationType();
+      return toolSuccess({
+        agendaGuid: guid,
+        legislation: legislation ?? "nedetekována (zjistí se při prvním dotazu)",
+      });
     }),
   );
 

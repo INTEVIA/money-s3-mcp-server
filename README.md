@@ -37,6 +37,7 @@ MONEY_S3_APP_ID=xxxxxxxx                  # ID aplikace (z money.cz, pouziva se 
 
 # Volitelne — agenda (pokud nenastavite, pouzijte nastroj switch_agenda)
 MONEY_S3_AGENDA_GUID=                     # Vychozi agenda GUID (pro pouziti s jednou agendou)
+MONEY_S3_LEGISLATION=                     # CZ nebo SK (auto-detekce pokud nenastavite)
 
 # Volitelne — pro Resource Owner Password Credentials flow
 MONEY_S3_USERNAME=                         # Uzivatelske jmeno (bez mezer!)
@@ -505,7 +506,8 @@ src/
 │   ├── mutation.ts              # Sdileny vzor mutace s kontrolou isSuccess
 │   ├── import-poller.ts         # Polling stavu asynchronniho importu
 │   ├── pagination.ts            # Prevod page/pageSize na skip/take
-│   └── filters.ts               # Sestaveni GraphQL filtru z jednoduchych parametru
+│   ├── filters.ts               # Sestaveni GraphQL filtru z jednoduchych parametru
+│   └── legislation.ts           # Auto-detekce CZ/SK legislativy a filtrace poli
 ```
 
 ### Jak funguje zapis dat
@@ -518,6 +520,21 @@ Vsechny zapisy (create/update/delete) v Money S3 API jsou **asynchronni**. Mutac
 3. Server polluje importStatus(guid) kazdou sekundu
 4. Az state = OK/WARNING/ERROR, vrati vysledek agentovi
 ```
+
+### CZ/SK legislativa
+
+Money S3 podporuje ceskou (CZ) i slovenskou (SK) legislativu. Nektere pole v GraphQL API jsou dostupne **pouze pro slovenskou legislativu** — pri dotazu na ceske agende API vrati chybu `"Member is available only for 'Sk' legislation"`.
+
+Server tuto situaci resi automaticky:
+
+1. Prvni dotaz na agendu odesle vsechna pole (predpoklada SK)
+2. Pokud API vrati chybu legislativy, oznaci agendu jako CZ
+3. SK pole se automaticky odstrani z dotazu a pozadavek se opakuje
+4. Vsechny dalsi dotazy uz SK pole neobsahuji (zadny zbytecny pozadavek navic)
+
+Legislativu lze vynutit pres env promennou `MONEY_S3_LEGISLATION=CZ` (nebo `SK`). Pokud neni nastavena, detekuje se automaticky.
+
+Aktualni legislativu agendy zjistite nastrojem `get_current_agenda`.
 
 ## Reseni potizi
 

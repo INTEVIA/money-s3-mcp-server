@@ -26,6 +26,14 @@ import { registerAgendaTools } from "./tools/agenda.js";
 
 async function main() {
   const config = loadConfig();
+
+  // Apply global legislation override from env (if set)
+  if (config.legislation) {
+    const { setGlobalLegislation } = await import("./helpers/legislation.js");
+    setGlobalLegislation(config.legislation);
+    console.error(`Legislativa nastavena globálně z env: ${config.legislation}`);
+  }
+
   const auth = new OAuthManager(config);
   const client = new MoneyS3Client(config, auth);
 
