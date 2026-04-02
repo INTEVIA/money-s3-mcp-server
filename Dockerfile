@@ -18,6 +18,8 @@ RUN npm ci --omit=dev
 
 COPY --from=build /app/dist/ ./dist/
 
+RUN chown -R mcpuser:mcpuser /app
+
 USER mcpuser
 
 ENV MCP_TRANSPORT=http
