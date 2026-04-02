@@ -62,7 +62,7 @@ export class OAuthManager {
   }
 
   private getTokenUrl(): string {
-    const appIdParam = `?AppId=${encodeURIComponent(this.config.appId)}`;
+    const appIdParam = `?AppId=${this.config.appId}`;
     if (this.config.isLocal) {
       return `http://localhost:85/connect/token${appIdParam}`;
     }
