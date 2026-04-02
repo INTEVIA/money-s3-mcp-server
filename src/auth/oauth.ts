@@ -62,13 +62,11 @@ export class OAuthManager {
   }
 
   private getTokenUrl(): string {
+    const appIdParam = `?AppId=${encodeURIComponent(this.config.appId)}`;
     if (this.config.isLocal) {
-      const appIdParam = this.config.appId
-        ? `?AppId=${encodeURIComponent(this.config.appId)}`
-        : "";
       return `http://localhost:85/connect/token${appIdParam}`;
     }
-    return `https://${this.config.domain}.api.moneys3.eu/connect/token`;
+    return `https://${this.config.domain}.api.moneys3.eu/connect/token${appIdParam}`;
   }
 
   private buildTokenRequestBody(): URLSearchParams {

@@ -8,7 +8,7 @@ Umoznuje Claudovi (a dalsim AI agentum) pres standardni [Model Context Protocol]
 
 - **Node.js** >= 20
 - **Money S3** s aktivovanym GraphQL API
-- API pristupove udaje (Client ID, Client Secret, Agenda GUID)
+- API pristupove udaje (Client ID, Client Secret, App ID)
 
 ## Instalace
 
@@ -33,7 +33,10 @@ Obsah `.env`:
 MONEY_S3_DOMAIN=nazev-domeny              # Domena API (bez .api.moneys3.eu)
 MONEY_S3_CLIENT_ID=xxxxxxxx               # Client ID z Klice API v Money S3
 MONEY_S3_CLIENT_SECRET=xxxxxxxx           # Client Secret
-MONEY_S3_AGENDA_GUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  # GUID agendy
+MONEY_S3_APP_ID=xxxxxxxx                  # ID aplikace (z money.cz, pouziva se v token URL)
+
+# Volitelne — agenda (pokud nenastavite, pouzijte nastroj switch_agenda)
+MONEY_S3_AGENDA_GUID=                     # Vychozi agenda GUID (pro pouziti s jednou agendou)
 
 # Volitelne — pro Resource Owner Password Credentials flow
 MONEY_S3_USERNAME=                         # Uzivatelske jmeno (bez mezer!)
@@ -41,7 +44,6 @@ MONEY_S3_PASSWORD=                         # Heslo
 
 # Volitelne — lokalni pristup
 MONEY_S3_LOCAL=false                       # true = localhost:85
-MONEY_S3_APP_ID=                           # ID aplikace (pro lokalni pristup)
 
 # Volitelne — import polling
 IMPORT_POLL_TIMEOUT_MS=30000               # Max cekani na async import (ms)
@@ -57,7 +59,8 @@ MCP_AUTH_TOKEN=                            # Bearer token pro HTTP auth (doporuc
 
 1. **MONEY_S3_DOMAIN** — domena vaseho Money S3 cloudu (cast pred `.api.moneys3.eu`)
 2. **Client ID / Secret** — v Money S3 jdete do *Nastaveni > API > Klice API*, vytvorte novy klic
-3. **Agenda GUID** — v Money S3 jdete do *Nastaveni > Agendy*, kliknete na agendu, GUID je v detailu
+3. **App ID** — vyplnte formular na money.cz, ID aplikace vam prijde emailem
+4. **Agenda GUID** (volitelne) — v Money S3 jdete do *Nastaveni > Agendy*, kliknete na agendu, GUID je v detailu. Pokud nenastavite, pouzijte nastroj `list_agendas` a `switch_agenda` za behu.
 
 ## Sestaveni a spusteni
 
@@ -89,18 +92,20 @@ Pridejte do `claude_desktop_config.json`:
         "MONEY_S3_DOMAIN": "moje-domena",
         "MONEY_S3_CLIENT_ID": "vas-client-id",
         "MONEY_S3_CLIENT_SECRET": "vas-client-secret",
-        "MONEY_S3_AGENDA_GUID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        "MONEY_S3_APP_ID": "vase-app-id"
       }
     }
   }
 }
 ```
 
+> **Poznamka:** `MONEY_S3_AGENDA_GUID` je volitelny. Pokud ho nenastavite, pouzijte `list_agendas` a `switch_agenda` pro vyber agendy za behu. Pro jednoagendove nasazeni ho muzete pridat do `env`.
+
 Umisteni konfiguracniho souboru:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Po restartu Claude Desktop se server automaticky spusti a zpristupni 129 nastroju.
+Po restartu Claude Desktop se server automaticky spusti a zpristupni 131 nastroju.
 
 ## Pouziti s Claude Code
 
@@ -117,7 +122,7 @@ Pridejte do `.claude/settings.json` v projektu nebo globalne:
         "MONEY_S3_DOMAIN": "moje-domena",
         "MONEY_S3_CLIENT_ID": "vas-client-id",
         "MONEY_S3_CLIENT_SECRET": "vas-client-secret",
-        "MONEY_S3_AGENDA_GUID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        "MONEY_S3_APP_ID": "vase-app-id"
       }
     }
   }
@@ -135,7 +140,7 @@ Server podporuje HTTP transport pomoci `StreamableHTTPServerTransport` z MCP SDK
 
 ```bash
 cp .env.example .env
-# Doplnte MONEY_S3_DOMAIN, CLIENT_ID, CLIENT_SECRET, AGENDA_GUID
+# Doplnte MONEY_S3_DOMAIN, CLIENT_ID, CLIENT_SECRET, APP_ID
 # Nastavte MCP_AUTH_TOKEN pro zabezpeceni:
 echo "MCP_AUTH_TOKEN=$(openssl rand -hex 32)" >> .env
 ```
@@ -254,9 +259,13 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 "Ukaž pokladni doklady za posledni tyden"
 
 "Kolik zamestnancu mame a jake maji pracovni pomery?"
+
+"Ukaz mi dostupne agendy a prepni na firmu ABC"
+
+"Prepni na agendu XYZ a vypis vydane faktury za brezen"
 ```
 
-## Dostupne nastroje (129)
+## Dostupne nastroje (131)
 
 ### Faktury (10 nastroju)
 
@@ -416,11 +425,13 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 | `update_wage` | Aktualizuje mzdu |
 | `delete_wage` | Smaze mzdu |
 
-### Agendy a zakazky (10 nastroju)
+### Agendy a zakazky (12 nastroju)
 
 | Nastroj | Popis |
 |---------|-------|
-| `list_agendas` | Dostupne agendy (firmy) v systemu |
+| `list_agendas` | Dostupne agendy (firmy) v systemu — funguje i bez nastavene agendy |
+| `switch_agenda` | Prepne aktivni agendu (vsechny nasledujici operace budou pracovat s touto agendou) |
+| `get_current_agenda` | Zobrazi aktualne nastavenou agendu (GUID) |
 | `list_years` | Ucetni roky aktualni agendy |
 | `list_job_orders` | Zakazky s filtrovanim |
 | `get_job_order` | Detail zakazky |
@@ -448,7 +459,7 @@ src/
 │   ├── client.ts                # GraphQL klient s automatickou autentizaci a timeouty
 │   ├── queries/ (10 souboru)    # GraphQL dotazy dle domeny
 │   └── mutations/ (7 souboru)   # GraphQL mutace dle domeny
-├── tools/ (10 souboru)          # 129 MCP nastroju
+├── tools/ (10 souboru)          # 131 MCP nastroju
 ├── helpers/
 │   ├── types.ts                 # Sdilene typy, rozhrani a Zod schemata
 │   ├── response.ts              # Standardizovane odpovedi + withErrorHandler
@@ -476,9 +487,17 @@ Vsechny zapisy (create/update/delete) v Money S3 API jsou **asynchronni**. Mutac
 - Overite, ze API klic je aktivni v Money S3
 - Pro ROPC flow: uzivatelske jmeno nesmi obsahovat mezery
 
+### "Agenda neni nastavena"
+- Nastavte `MONEY_S3_AGENDA_GUID` v env, nebo pouzijte nastroj `list_agendas` a nasledne `switch_agenda`
+
 ### "GraphQL chyba"
-- Skontrolujte, ze `MONEY_S3_AGENDA_GUID` je platny GUID existujici agendy
+- Skontrolujte, ze aktivni agenda je platny GUID existujici agendy
 - Overite, ze API klic ma opravneni k dane agende
+
+### "API_VERSIONING_MISSMATCH" nebo "Uzivatel nebyl prihlasen"
+- Restartujte Windows sluzbu **S3Api** (v Task Manager / Services) — resi 99% pripadu
+- V extremnim pripade: odhlaste vsechny uzivatele Money S3, vypnete Money, restartujte sluzbu
+- Zkontrolujte stav v Money S3: Nastroje > S3api
 
 ### "Import nebyl dokoncen"
 - Zvyste `IMPORT_POLL_TIMEOUT_MS` (vychozi 30s)

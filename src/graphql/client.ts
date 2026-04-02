@@ -10,11 +10,27 @@ export class MoneyS3Client {
   private graphqlClient: GraphQLClient;
   private config: Config;
   private auth: OAuthManager;
+  private activeAgendaGuid: string | undefined;
 
   constructor(config: Config, auth: OAuthManager) {
     this.config = config;
     this.auth = auth;
+    this.activeAgendaGuid = config.agendaGuid;
     this.graphqlClient = new GraphQLClient(this.getEndpoint());
+  }
+
+  /**
+   * Switch the active agenda. All subsequent requests will use this GUID.
+   */
+  setAgendaGuid(guid: string): void {
+    this.activeAgendaGuid = guid;
+  }
+
+  /**
+   * Get the currently active agenda GUID, or undefined if not set.
+   */
+  getAgendaGuid(): string | undefined {
+    return this.activeAgendaGuid;
   }
 
   /**
@@ -25,6 +41,25 @@ export class MoneyS3Client {
     variables?: Record<string, unknown>,
   ): Promise<T> {
     await this.updateHeaders();
+    return this.executeRequest<T>(queryStr, variables);
+  }
+
+  /**
+   * Execute a GraphQL query without requiring AgendaGuid header.
+   * Used for agenda-listing queries that must work before an agenda is selected.
+   */
+  async queryWithoutAgenda<T>(
+    queryStr: string,
+    variables?: Record<string, unknown>,
+  ): Promise<T> {
+    await this.updateHeadersWithoutAgenda();
+    return this.executeRequest<T>(queryStr, variables);
+  }
+
+  private async executeRequest<T>(
+    queryStr: string,
+    variables?: Record<string, unknown>,
+  ): Promise<T> {
     const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
     try {
       return await this.graphqlClient.request<T>({
@@ -33,9 +68,8 @@ export class MoneyS3Client {
         signal,
       });
     } catch (error: unknown) {
-      // On 401, force token refresh and retry once
       if (this.isAuthError(error)) {
-        await this.updateHeaders(true);
+        await this.updateHeadersWithoutAgenda(true);
         const retrySignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
         return await this.graphqlClient.request<T>({
           document: queryStr,
@@ -58,11 +92,27 @@ export class MoneyS3Client {
   }
 
   private async updateHeaders(forceRefresh = false): Promise<void> {
+    if (!this.activeAgendaGuid) {
+      throw new Error(
+        "Agenda není nastavena. Použijte nástroj switch_agenda nebo nastavte MONEY_S3_AGENDA_GUID.",
+      );
+    }
     const token = await this.auth.getToken(forceRefresh);
     this.graphqlClient.setHeaders({
       Authorization: `Bearer ${token}`,
-      AgendaGuid: this.config.agendaGuid,
+      AgendaGuid: this.activeAgendaGuid,
     });
+  }
+
+  private async updateHeadersWithoutAgenda(forceRefresh = false): Promise<void> {
+    const token = await this.auth.getToken(forceRefresh);
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+    };
+    if (this.activeAgendaGuid) {
+      headers.AgendaGuid = this.activeAgendaGuid;
+    }
+    this.graphqlClient.setHeaders(headers);
   }
 
   private isAuthError(error: unknown): boolean {

@@ -133,7 +133,10 @@ money-s3-mcp-server/
 MONEY_S3_DOMAIN=company-name              # Domain (without .api.moneys3.eu suffix)
 MONEY_S3_CLIENT_ID=xxxxxxxx               # Client ID from API Keys in Money S3
 MONEY_S3_CLIENT_SECRET=xxxxxxxx           # Client Secret
-MONEY_S3_AGENDA_GUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  # Agenda GUID
+MONEY_S3_APP_ID=xxxxxxxx                  # App ID (obtain at money.cz, used in token URL)
+
+# Optional — agenda (if not set, use switch_agenda tool to select)
+MONEY_S3_AGENDA_GUID=                     # Default agenda GUID (for single-agenda setups)
 
 # Optional — for Resource Owner Password Credentials flow
 MONEY_S3_USERNAME=                         # Username (no spaces!)
@@ -141,11 +144,15 @@ MONEY_S3_PASSWORD=                         # User password
 
 # Optional
 MONEY_S3_LOCAL=false                       # true = local access (localhost:85)
-MONEY_S3_APP_ID=                           # App ID (for local access)
 
 # Optional — import polling
 IMPORT_POLL_TIMEOUT_MS=30000               # Max wait time for import (default 30s)
 IMPORT_POLL_INTERVAL_MS=1000               # Poll interval (default 1s)
+
+# Optional — transport (Docker / HTTP)
+MCP_TRANSPORT=stdio                        # "stdio" (default) or "http" (Docker)
+MCP_PORT=3000                              # HTTP port when MCP_TRANSPORT=http
+MCP_AUTH_TOKEN=                            # Bearer token for HTTP auth (recommended for production)
 ```
 
 ### config.ts — Zod Validation
@@ -154,16 +161,19 @@ IMPORT_POLL_INTERVAL_MS=1000               # Poll interval (default 1s)
 import { z } from "zod";
 
 const configSchema = z.object({
-  domain: z.string().min(1),
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-  agendaGuid: z.string().uuid(),
+  domain: z.string().min(1, "MONEY_S3_DOMAIN je povinný"),
+  clientId: z.string().min(1, "MONEY_S3_CLIENT_ID je povinný"),
+  clientSecret: z.string().min(1, "MONEY_S3_CLIENT_SECRET je povinný"),
+  agendaGuid: z.string().uuid("MONEY_S3_AGENDA_GUID musí být platné UUID").optional(),
   username: z.string().optional(),
   password: z.string().optional(),
   isLocal: z.boolean().default(false),
-  appId: z.string().optional(),
-  importPollTimeoutMs: z.number().default(30000),
-  importPollIntervalMs: z.number().default(1000),
+  appId: z.string().min(1, "MONEY_S3_APP_ID je povinný"),
+  importPollTimeoutMs: z.number().int().positive().default(30000),
+  importPollIntervalMs: z.number().int().positive().default(1000),
+  transport: z.enum(["stdio", "http"]).default("stdio"),
+  port: z.number().int().positive().default(3000),
+  authToken: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -173,13 +183,16 @@ export function loadConfig(): Config {
     domain: process.env.MONEY_S3_DOMAIN,
     clientId: process.env.MONEY_S3_CLIENT_ID,
     clientSecret: process.env.MONEY_S3_CLIENT_SECRET,
-    agendaGuid: process.env.MONEY_S3_AGENDA_GUID,
+    agendaGuid: process.env.MONEY_S3_AGENDA_GUID || undefined,
     username: process.env.MONEY_S3_USERNAME || undefined,
     password: process.env.MONEY_S3_PASSWORD || undefined,
     isLocal: process.env.MONEY_S3_LOCAL === "true",
-    appId: process.env.MONEY_S3_APP_ID || undefined,
-    importPollTimeoutMs: Number(process.env.IMPORT_POLL_TIMEOUT_MS) || 30000,
-    importPollIntervalMs: Number(process.env.IMPORT_POLL_INTERVAL_MS) || 1000,
+    appId: process.env.MONEY_S3_APP_ID,
+    importPollTimeoutMs: parseInt(process.env.IMPORT_POLL_TIMEOUT_MS || "30000", 10),
+    importPollIntervalMs: parseInt(process.env.IMPORT_POLL_INTERVAL_MS || "1000", 10),
+    transport: process.env.MCP_TRANSPORT || "stdio",
+    port: parseInt(process.env.MCP_PORT || "3000", 10),
+    authToken: process.env.MCP_AUTH_TOKEN || undefined,
   });
 }
 ```
@@ -190,13 +203,17 @@ export function loadConfig(): Config {
 
 ### Token Endpoints
 
-- **Remote**: `https://{domain}.api.moneys3.eu/connect/token`
+- **Remote**: `https://{domain}.api.moneys3.eu/connect/token?AppId={APP_ID}`
 - **Local**: `http://localhost:85/connect/token?AppId={APP_ID}`
 
-### Client Credentials Flow (recommended)
+AppId is always required in the token URL (both remote and local).
+
+### Client Credentials Flow
+
+Requires a Money S3 user to be **assigned to the ClientId/Secret** in the API key settings. If no user is assigned, this flow will NOT work — use ROPC instead.
 
 ```
-POST /connect/token
+POST /connect/token?AppId={APP_ID}
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials
@@ -204,10 +221,12 @@ grant_type=client_credentials
 &client_secret={CLIENT_SECRET}
 ```
 
-### Resource Owner Password Credentials Flow (alternative)
+### Resource Owner Password Credentials Flow
+
+Requires the user field in the API key settings to be **left empty**. The user credentials are provided at authentication time.
 
 ```
-POST /connect/token
+POST /connect/token?AppId={APP_ID}
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=password

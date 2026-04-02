@@ -39,12 +39,37 @@ export function registerAgendaTools(
 ): void {
   server.tool(
     "list_agendas",
-    "Vypíše dostupné agendy (firmy) v systému Money S3",
+    "Vypíše dostupné agendy (firmy) v systému Money S3. Funguje i bez nastavené agendy.",
     paginationFields,
     withErrorHandler(async (params) => {
       const { skip, take } = toPaginationArgs(params);
-      const result = await client.query<CollectionResponse>(LIST_AGENDAS, { skip, take });
+      const result = await client.queryWithoutAgenda<CollectionResponse>(LIST_AGENDAS, { skip, take });
       return toolListResponse(result.agendas.items, result.agendas.totalCount, params.page, params.pageSize);
+    }),
+  );
+
+  server.tool(
+    "switch_agenda",
+    "Přepne aktivní agendu (firmu). Všechny následující operace budou pracovat s touto agendou.",
+    {
+      agendaGuid: z.string().uuid().describe("GUID agendy (získáte z list_agendas)"),
+    },
+    withErrorHandler(async (params) => {
+      client.setAgendaGuid(params.agendaGuid);
+      return toolSuccess({ agendaGuid: params.agendaGuid, message: `Agenda přepnuta na ${params.agendaGuid}` });
+    }),
+  );
+
+  server.tool(
+    "get_current_agenda",
+    "Zobrazí aktuálně nastavenou agendu (GUID)",
+    {},
+    withErrorHandler(async () => {
+      const guid = client.getAgendaGuid();
+      if (!guid) {
+        return toolError("Žádná agenda není nastavena. Použijte switch_agenda.");
+      }
+      return toolSuccess({ agendaGuid: guid });
     }),
   );
 
