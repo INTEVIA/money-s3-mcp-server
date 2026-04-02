@@ -7,9 +7,6 @@ dist
 .gitignore
 .DS_Store
 .claude
-haiku
-opus
-sonnet
 schema.graphql
 CLAUDE.md
 MONEY_S3_MCP_SERVER_SPEC.md
