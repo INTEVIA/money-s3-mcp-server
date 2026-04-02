@@ -45,7 +45,7 @@ export class MoneyS3Client {
   }
 
   /**
-   * Execute a GraphQL query without requiring AgendaGuid header.
+   * Execute a GraphQL query without requiring AgendaId header (agenda selection).
    * Used for agenda-listing queries that must work before an agenda is selected.
    */
   async queryWithoutAgenda<T>(
@@ -100,7 +100,7 @@ export class MoneyS3Client {
     const token = await this.auth.getToken(forceRefresh);
     this.graphqlClient.setHeaders({
       Authorization: `Bearer ${token}`,
-      AgendaGuid: this.activeAgendaGuid,
+      AgendaId: this.activeAgendaGuid,
     });
   }
 
@@ -110,7 +110,7 @@ export class MoneyS3Client {
       Authorization: `Bearer ${token}`,
     };
     if (this.activeAgendaGuid) {
-      headers.AgendaGuid = this.activeAgendaGuid;
+      headers.AgendaId = this.activeAgendaGuid;
     }
     this.graphqlClient.setHeaders(headers);
   }

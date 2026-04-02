@@ -29,28 +29,31 @@ async function main() {
   const auth = new OAuthManager(config);
   const client = new MoneyS3Client(config, auth);
 
-  const server = new McpServer({
-    name: "money-s3",
-    version: "1.0.0",
-  });
-
-  // Register all tool groups
-  registerImportStatusTools(server, client);
-  registerAgendaTools(server, client);
-  registerCodebookTools(server, client);
-  registerInvoiceTools(server, client);
-  registerCompanyTools(server, client);
-  registerDocumentTools(server, client);
-  registerWarehouseTools(server, client);
-  registerOrderTools(server, client);
-  registerAccountingTools(server, client);
-  registerEmployeeTools(server, client);
+  // Factory: creates a new McpServer with all tools registered.
+  // Called once for stdio, or once per HTTP session.
+  function createMcpServer(): McpServer {
+    const server = new McpServer({
+      name: "money-s3",
+      version: "1.0.0",
+    });
+    registerImportStatusTools(server, client);
+    registerAgendaTools(server, client);
+    registerCodebookTools(server, client);
+    registerInvoiceTools(server, client);
+    registerCompanyTools(server, client);
+    registerDocumentTools(server, client);
+    registerWarehouseTools(server, client);
+    registerOrderTools(server, client);
+    registerAccountingTools(server, client);
+    registerEmployeeTools(server, client);
+    return server;
+  }
 
   if (config.transport === "http") {
-    await startHttpTransport(server, config);
+    await startHttpTransport(createMcpServer, config);
   } else {
     const transport = new StdioServerTransport();
-    await server.connect(transport);
+    await createMcpServer().connect(transport);
     console.error("Money S3 MCP server běží na stdio transportu");
   }
 }
@@ -117,13 +120,10 @@ const faviconBuffer = readFileSync(join(__dirname, "assets", "favicon.png"));
 // HTTP transport
 // ---------------------------------------------------------------------------
 
-async function startHttpTransport(server: McpServer, config: Config): Promise<void> {
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  });
-
-  await server.connect(transport);
-
+async function startHttpTransport(
+  createServer_: () => McpServer,
+  config: Config,
+): Promise<void> {
   const authEnabled = config.authToken !== undefined;
 
   if (authEnabled) {
@@ -133,6 +133,9 @@ async function startHttpTransport(server: McpServer, config: Config): Promise<vo
       "HTTP auth: VAROVÁNÍ — MCP_AUTH_TOKEN není nastaven, endpoint /mcp je nechráněný!",
     );
   }
+
+  // Session map: sessionId → transport (for reconnects within the same session)
+  const sessions = new Map<string, StreamableHTTPServerTransport>();
 
   const httpServer = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
@@ -159,6 +162,32 @@ async function startHttpTransport(server: McpServer, config: Config): Promise<vo
       if (authEnabled && !checkAuth(req, res, config.authToken!)) {
         return;
       }
+
+      const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+      // Reuse existing session transport if available
+      if (sessionId && sessions.has(sessionId)) {
+        const existing = sessions.get(sessionId)!;
+        await existing.handleRequest(req, res);
+        return;
+      }
+
+      // New session: create a fresh transport + server
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (id) => {
+          sessions.set(id, transport);
+        },
+      });
+
+      transport.onclose = () => {
+        if (transport.sessionId) {
+          sessions.delete(transport.sessionId);
+        }
+      };
+
+      const mcpServer = createServer_();
+      await mcpServer.connect(transport);
       await transport.handleRequest(req, res);
       return;
     }
@@ -175,7 +204,9 @@ async function startHttpTransport(server: McpServer, config: Config): Promise<vo
 
   const shutdown = async () => {
     console.error("Ukončuji server...");
-    await transport.close();
+    for (const transport of sessions.values()) {
+      await transport.close();
+    }
     httpServer.close();
     process.exit(0);
   };
