@@ -316,6 +316,10 @@ export function registerInvoiceTools(
         .string()
         .optional()
         .describe("IČO obchodního partnera"),
+      remainingAmountGt: z
+        .number()
+        .optional()
+        .describe("Zbývá uhradit více než (Kč) — pro neuhrazené faktury zadejte 0"),
       year: z.number().optional().describe("Účetní rok"),
       sortBy: issuedInvoiceSortEnum
         .default("dateOfIssue")
@@ -334,6 +338,9 @@ export function registerInvoiceTools(
         variableSymbol: eqFilter(params.variableSymbol),
         partnerAddress: params.partnerIco
           ? partnerIcoFilter(params.partnerIco)
+          : undefined,
+        remainingAmountToPayHc: params.remainingAmountGt !== undefined
+          ? { gt: params.remainingAmountGt }
           : undefined,
         year: eqFilter(params.year),
       });
@@ -582,6 +589,10 @@ export function registerInvoiceTools(
         .string()
         .optional()
         .describe("IČO obchodního partnera"),
+      remainingAmountGt: z
+        .number()
+        .optional()
+        .describe("Zbývá uhradit více než (Kč) — pro neuhrazené faktury zadejte 0"),
       year: z.number().optional().describe("Účetní rok"),
       sortBy: receivedInvoiceSortEnum
         .default("dateOfIssue")
@@ -601,6 +612,9 @@ export function registerInvoiceTools(
         receivedDocumentNumber: eqFilter(params.receivedDocumentNumber),
         partnerAddress: params.partnerIco
           ? partnerIcoFilter(params.partnerIco)
+          : undefined,
+        remainingAmountToPayHc: params.remainingAmountGt !== undefined
+          ? { gt: params.remainingAmountGt }
           : undefined,
         year: eqFilter(params.year),
       });

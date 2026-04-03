@@ -93,16 +93,18 @@ export function registerDocumentTools(
 
   server.tool(
     "list_cash_vouchers",
-    "Vypíše pokladní doklady s filtrováním dle data, čísla dokladu, variabilního symbolu",
+    "Vypíše pokladní doklady s filtrováním dle data, čísla dokladu, pokladny, variabilního symbolu",
     {
       ...documentFilterSchema,
+      cashBoxShortCut: z.string().optional().describe("Zkratka pokladny (přesná shoda, např. POKL)"),
+      description: z.string().optional().describe("Popis dokladu (přesná shoda)"),
       sortBy: z
         .enum(["id", "documentNumber", "dateOfIssue", "totalWithVatHc", "year"])
-        .default("id")
+        .default("dateOfIssue")
         .describe("Pole pro řazení"),
       sortDirection: z
         .enum(["ASC", "DESC"])
-        .default("ASC")
+        .default("DESC")
         .describe("Směr řazení"),
     },
     withErrorHandler(async (params) => {
@@ -112,6 +114,10 @@ export function registerDocumentTools(
         dateOfIssue: dateRangeFilter(params.dateFrom, params.dateTo),
         documentNumber: eqFilter(params.documentNumber),
         variableSymbol: eqFilter(params.variableSymbol),
+        description: eqFilter(params.description),
+        cashBox: params.cashBoxShortCut
+          ? { shortCut: { eq: params.cashBoxShortCut } }
+          : undefined,
         year: eqFilter(params.year),
       });
 
@@ -283,9 +289,11 @@ export function registerDocumentTools(
 
   server.tool(
     "list_bank_statements",
-    "Vypíše bankovní výpisy s filtrováním dle data, čísla dokladu, variabilního symbolu",
+    "Vypíše bankovní výpisy s filtrováním dle data, bankovního účtu, čísla dokladu, popisu, variabilního symbolu",
     {
       ...documentFilterSchema,
+      bankAccountShortCut: z.string().optional().describe("Zkratka bankovního účtu (přesná shoda, např. BAN, ÚVĚR-ČS 25)"),
+      description: z.string().optional().describe("Popis dokladu (přesná shoda)"),
       sortBy: z
         .enum([
           "id",
@@ -295,11 +303,11 @@ export function registerDocumentTools(
           "totalWithVatHc",
           "year",
         ])
-        .default("id")
+        .default("dateOfIssue")
         .describe("Pole pro řazení"),
       sortDirection: z
         .enum(["ASC", "DESC"])
-        .default("ASC")
+        .default("DESC")
         .describe("Směr řazení"),
     },
     withErrorHandler(async (params) => {
@@ -309,6 +317,10 @@ export function registerDocumentTools(
         dateOfIssue: dateRangeFilter(params.dateFrom, params.dateTo),
         documentNumber: eqFilter(params.documentNumber),
         variableSymbol: eqFilter(params.variableSymbol),
+        description: eqFilter(params.description),
+        bankAccount: params.bankAccountShortCut
+          ? { shortCut: { eq: params.bankAccountShortCut } }
+          : undefined,
         year: eqFilter(params.year),
       });
 
