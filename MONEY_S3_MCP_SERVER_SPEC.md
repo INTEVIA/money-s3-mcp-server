@@ -328,7 +328,7 @@ query {
 
 - `skip` — number of records to skip (offset)
 - `take` — number of records to return (limit)
-- **MCP tools should expose**: `page` (default 1) and `pageSize` (default 20, max 100)
+- **MCP tools should expose**: `page` (default 1) and `pageSize` (default 20, max 50)
 - **Internally convert**: `skip = (page - 1) * pageSize`, `take = pageSize`
 - Always return `totalCount` in responses for context
 
@@ -550,31 +550,34 @@ Define default field selections for each major entity type. Fragments must cover
 
 ### Example: Issued Invoice — List Fields
 
+List queries are deliberately lean to avoid oversized responses (max pageSize = 50). Only essential fields for identification, status, and amounts are included:
+
 ```
-id, documentNumber, guid, description, dateOfIssue, dateOfTaxing, dateOfMaturity,
-dateOfPayment, variableSymbol, invoiceType, isCreditNote, totalWithVatHc,
-totalWithoutVatHc, amountToPayHc, remainingAmountToPayHc,
-partnerAddress {
-  company { id name }
-  identificationNumber
-  businessAddress { name street municipality }
-}
+id, guid, documentNumber, description, variableSymbol,
+invoiceType, isCreditNote, cancel,
+dateOfIssue, dateOfMaturity, dateOfPayment,
+totalWithVatHc, remainingAmountToPayHc, isBilled, year,
+partnerAddress { identificationNumber, businessAddress { name } }
 currency { code }
-items { description amount unitPriceHc vatRate priceType }
 ```
 
-### Example: Issued Invoice — Detail Fields (extend list with)
+### Example: Issued Invoice — Detail Fields (GET query includes everything)
 
 ```
+...all list fields plus:
 registrationNumber, specificSymbol, pairingSymbol, orderNumber,
-dateOfAccountingEvent, dateOfVatApplication, isSimplifiedTaxReceipt,
+dateOfTaxing, dateOfAccountingEvent, dateOfVatApplication,
+amountToPayHc, amountToPay, remainingAmountToPay,
+exchangeRate, exchangeRateAmount, isSimplifiedTaxReceipt (SK only),
+partnerAddress { ...full address, vatIdentificationNumber, vatIdentificationNumberSk (SK only) }
 jobOrder { shortCut name }
 centre { shortCut name }
 operation { shortCut name }
-vatClassification { shortCut }
-accountAssignment { shortCut }
-numericalSerie { prefix }
-items { ...(all fields) }
+vatClassification { shortCut description }
+accountAssignment { ... }
+numericalSerie { prefix number }
+vatPurpose { shortCut description } (SK only)
+items { ... }
 payments { ... }
 vatRateSummary { ... }
 ```
@@ -597,7 +600,7 @@ note, discount, maturityReceivablesDays, maturityLiabilitiesDays
 - **Description**: In Czech — the AI agent reads this to decide which tool to call
 - **Input Schema**: Validated with Zod, precise types, required fields marked, `date`/`uuid` formats where relevant
 - **Simplified Parameters**: Never expose full GraphQL depth — tools internally build the query
-- **Pagination everywhere**: Default `pageSize: 20`, max `100`. No tool loads unlimited records
+- **Pagination everywhere**: Default `pageSize: 20`, max `50`. No tool loads unlimited records
 - **Sorting**: Expose `sortBy` and `sortDirection` params with sensible defaults
 - **Always return `totalCount`** for context
 - **Error responses**: Human-readable message via `isError: true`
@@ -610,7 +613,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 const listIssuedInvoicesSchema = z.object({
   page: z.number().int().min(1).default(1).describe("Page number"),
-  pageSize: z.number().int().min(1).max(100).default(20).describe("Records per page"),
+  pageSize: z.number().int().min(1).max(50).default(20).describe("Records per page"),
   dateFrom: z.string().optional().describe("Date of issue from (YYYY-MM-DD)"),
   dateTo: z.string().optional().describe("Date of issue to (YYYY-MM-DD)"),
   documentNumber: z.string().optional().describe("Document number (exact match)"),
