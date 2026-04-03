@@ -106,7 +106,7 @@ Umisteni konfiguracniho souboru:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Po restartu Claude Desktop se server automaticky spusti a zpristupni 131 nastroju.
+Po restartu Claude Desktop se server automaticky spusti a zpristupni 187 nastroju.
 
 ## Pouziti s Claude Code
 
@@ -305,7 +305,7 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 "Prepni na agendu XYZ a vypis vydane faktury za brezen"
 ```
 
-## Dostupne nastroje (131)
+## Dostupne nastroje (187)
 
 ### Faktury (10 nastroju)
 
@@ -362,7 +362,7 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 | `update_receivable` | Aktualizuje pohledavku |
 | `delete_receivable` | Smaze pohledavku |
 
-### Sklad (22 nastroju)
+### Sklad (42 nastroju)
 
 | Nastroj | Popis |
 |---------|-------|
@@ -379,15 +379,35 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 | `list_warehouses` | Seznam skladu |
 | `list_received_slips` | Prijemky |
 | `create_received_slip` | Vytvori prijemku |
+| `update_received_slip` | Aktualizuje prijemku |
+| `delete_received_slip` | Smaze prijemku |
 | `list_issued_slips` | Vydejky |
 | `create_issued_slip` | Vytvori vydejku |
+| `update_issued_slip` | Aktualizuje vydejku |
+| `delete_issued_slip` | Smaze vydejku |
 | `list_sale_slips` | Prodejky |
 | `create_sale_slip` | Vytvori prodejku |
+| `update_sale_slip` | Aktualizuje prodejku |
+| `delete_sale_slip` | Smaze prodejku |
 | `list_transfer_notes` | Prevodky |
 | `create_transfer_note` | Vytvori prevodku |
+| `update_transfer_note` | Aktualizuje prevodku |
+| `delete_transfer_note` | Smaze prevodku |
 | `list_received_delivery_notes` | Prijate dodaci listy |
+| `create_received_delivery_note` | Vytvori prijaty dodaci list |
+| `update_received_delivery_note` | Aktualizuje prijaty dodaci list |
+| `delete_received_delivery_note` | Smaze prijaty dodaci list |
 | `list_issued_delivery_notes` | Vydane dodaci listy |
+| `create_issued_delivery_note` | Vytvori vydany dodaci list |
+| `update_issued_delivery_note` | Aktualizuje vydany dodaci list |
+| `delete_issued_delivery_note` | Smaze vydany dodaci list |
+| `list_production_notes` | Vyrobni listy |
 | `list_stock_takings` | Inventury |
+| `list_stock_taking_documents` | Inventurni doklady |
+| `create_stock_taking_document` | Vytvori inventurni doklad |
+| `update_stock_taking_document` | Aktualizuje inventurni doklad |
+| `delete_stock_taking_document` | Smaze inventurni doklad |
+| `list_stock_taking_types` | Typy inventur |
 
 ### Objednavky, nabidky, poptavky (26 nastroju)
 
@@ -420,17 +440,32 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 | `list_services` | Servisni doklady |
 | `list_repairs` | Opravy |
 
-### Ciselniky (15 nastroju)
+### Ciselniky (51 nastroju)
 
 | Nastroj | Popis |
 |---------|-------|
 | `list_currencies` | Meny (ISO kody, kurzy) |
 | `list_centres` | Strediska |
+| `create_centre` | Vytvori stredisko |
+| `update_centre` | Aktualizuje stredisko |
+| `delete_centre` | Smaze stredisko |
 | `list_operations` | Cinnosti |
+| `create_operation` | Vytvori cinnost |
+| `update_operation` | Aktualizuje cinnost |
+| `delete_operation` | Smaze cinnost |
 | `list_numerical_series` | Ciselne rady |
 | `list_bank_account_cash_boxes` | Bankovni ucty a pokladny |
+| `create_bank_account_cash_box` | Vytvori bankovni ucet/pokladnu |
+| `update_bank_account_cash_box` | Aktualizuje bankovni ucet/pokladnu |
+| `delete_bank_account_cash_box` | Smaze bankovni ucet/pokladnu |
 | `list_vat_classifications` | Klasifikace DPH |
+| `create_vat_classification` | Vytvori klasifikaci DPH |
+| `update_vat_classification` | Aktualizuje klasifikaci DPH |
+| `delete_vat_classification` | Smaze klasifikaci DPH |
 | `list_account_charts` | Uctovy rozvrh (uctova osnova) |
+| `create_account_chart` | Vytvori ucet v rozvrhu |
+| `update_account_chart` | Aktualizuje ucet v rozvrhu |
+| `delete_account_chart` | Smaze ucet z rozvrhu |
 | `list_countries` | Staty (ISO kody) |
 | `list_constant_symbols` | Konstantni symboly |
 | `list_exchange_lists` | Kurzovni listky |
@@ -439,6 +474,27 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 | `list_address_keys` | Klice adres |
 | `list_shippings` | Dopravci |
 | `list_parameters` | Parametry (pro zasoby) |
+| `create_parameter` | Vytvori parametr |
+| `update_parameter` | Aktualizuje parametr |
+| `delete_parameter` | Smaze parametr |
+| `list_banks` | Banky (ciselnik) |
+| `list_combined_nomenclatures` | Kombinovana nomenklatura (celni kody) |
+| `list_municipality_postal_codes` | Obce a PSC |
+| `create_vat_accounting_acc` | Vytvori uctovani DPH (podvojne) |
+| `update_vat_accounting_acc` | Aktualizuje uctovani DPH (podvojne) |
+| `delete_vat_accounting_acc` | Smaze uctovani DPH (podvojne) |
+| `create_vat_accounting_tr` | Vytvori uctovani DPH (danova evidence) |
+| `update_vat_accounting_tr` | Aktualizuje uctovani DPH (danova evidence) |
+| `delete_vat_accounting_tr` | Smaze uctovani DPH (danova evidence) |
+| `create_account_assignment_acc` | Vytvori predkontaci (podvojne) |
+| `update_account_assignment_acc` | Aktualizuje predkontaci (podvojne) |
+| `delete_account_assignment_acc` | Smaze predkontaci (podvojne) |
+| `create_account_assignment_tr` | Vytvori predkontaci (danova evidence) |
+| `update_account_assignment_tr` | Aktualizuje predkontaci (danova evidence) |
+| `delete_account_assignment_tr` | Smaze predkontaci (danova evidence) |
+| `create_account_movement` | Vytvori ucetni pohyb |
+| `update_account_movement` | Aktualizuje ucetni pohyb |
+| `delete_account_movement` | Smaze ucetni pohyb |
 
 ### Ucetnictvi (8 nastroju)
 
@@ -499,7 +555,7 @@ src/
 │   ├── client.ts                # GraphQL klient s automatickou autentizaci a timeouty
 │   ├── queries/ (10 souboru)    # GraphQL dotazy dle domeny
 │   └── mutations/ (7 souboru)   # GraphQL mutace dle domeny
-├── tools/ (10 souboru)          # 131 MCP nastroju
+├── tools/ (10 souboru)          # 187 MCP nastroju
 ├── helpers/
 │   ├── types.ts                 # Sdilene typy, rozhrani a Zod schemata
 │   ├── response.ts              # Standardizovane odpovedi + withErrorHandler

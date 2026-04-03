@@ -19,6 +19,9 @@ import {
   LIST_RECEIVED_DELIVERY_NOTES,
   LIST_ISSUED_DELIVERY_NOTES,
   LIST_STOCK_TAKINGS,
+  LIST_PRODUCTION_NOTES,
+  LIST_STOCK_TAKING_DOCUMENTS,
+  LIST_STOCK_TAKING_TYPES,
 } from "../graphql/queries/warehouse.js";
 import {
   CREATE_ARTICLE,
@@ -31,6 +34,23 @@ import {
   CREATE_ISSUED_SLIP,
   CREATE_SALE_SLIP,
   CREATE_TRANSFER_NOTE,
+  UPDATE_RECEIVED_SLIP,
+  UPDATE_ISSUED_SLIP,
+  UPDATE_SALE_SLIP,
+  UPDATE_TRANSFER_NOTE,
+  UPDATE_RECEIVED_DELIVERY_NOTE,
+  UPDATE_ISSUED_DELIVERY_NOTE,
+  DELETE_RECEIVED_SLIP,
+  DELETE_ISSUED_SLIP,
+  DELETE_SALE_SLIP,
+  DELETE_TRANSFER_NOTE,
+  DELETE_RECEIVED_DELIVERY_NOTE,
+  DELETE_ISSUED_DELIVERY_NOTE,
+  CREATE_RECEIVED_DELIVERY_NOTE,
+  CREATE_ISSUED_DELIVERY_NOTE,
+  CREATE_STOCK_TAKING_DOCUMENT,
+  UPDATE_STOCK_TAKING_DOCUMENT,
+  DELETE_STOCK_TAKING_DOCUMENT,
 } from "../graphql/mutations/warehouse.js";
 import { toPaginationArgs } from "../helpers/pagination.js";
 import {
@@ -161,6 +181,84 @@ function buildInStoreDocumentInput(params: InStoreDocumentInputParams): Record<s
     });
   }
   return input;
+}
+
+// ── In-store document update schema ────────────────────────────────────────
+
+const inStoreDocumentUpdateSchema = z.object({
+  documentNumber: z.string().describe("Číslo dokladu (identifikátor pro aktualizaci)"),
+  description: z.string().optional().describe("Popis dokladu"),
+  dateOfIssue: z.string().optional().describe("Datum vystavení (YYYY-MM-DD)"),
+  note: z.string().optional().describe("Poznámka"),
+  items: z.array(stockItemSchema).optional().describe("Položky dokladu (JSON pole)"),
+});
+
+type InStoreDocumentUpdateParams = z.infer<typeof inStoreDocumentUpdateSchema>;
+
+function buildInStoreDocumentUpdateInput(params: InStoreDocumentUpdateParams): Record<string, unknown> {
+  const input: Record<string, unknown> = {
+    documentNumber: params.documentNumber,
+  };
+  if (params.description !== undefined) input.description = params.description;
+  if (params.dateOfIssue !== undefined) input.dateOfIssue = params.dateOfIssue;
+  if (params.note !== undefined) input.note = params.note;
+  if (params.items !== undefined) input.items = params.items.map(buildStockItemInput);
+  return input;
+}
+
+// ── In-store document delete schema ────────────────────────────────────────
+
+const inStoreDocumentDeleteSchema = {
+  id: z.number().int().describe("ID dokladu ke smazání"),
+  year: z.number().int().optional().describe("Účetní rok"),
+};
+
+// ── Helpers: register update/delete for in-store document types ────────────
+
+interface InStoreDocTypeConfig {
+  typeName: string;
+  varName: string;
+  updateMutation: string;
+  deleteMutation: string;
+  updateMutationKey: string;
+  deleteMutationKey: string;
+  czNameGenitive: string;
+}
+
+function registerInStoreDocumentUpdateTool(
+  server: McpServer,
+  client: MoneyS3Client,
+  toolName: string,
+  description: string,
+  cfg: InStoreDocTypeConfig,
+): void {
+  server.tool(
+    toolName,
+    description,
+    inStoreDocumentUpdateSchema.shape,
+    withErrorHandler(async (params: InStoreDocumentUpdateParams) => {
+      const input = buildInStoreDocumentUpdateInput(params);
+      return executeMutationWithCheck(client, cfg.updateMutation, { [cfg.varName]: input }, cfg.updateMutationKey);
+    }),
+  );
+}
+
+function registerInStoreDocumentDeleteTool(
+  server: McpServer,
+  client: MoneyS3Client,
+  toolName: string,
+  description: string,
+  cfg: InStoreDocTypeConfig,
+): void {
+  server.tool(
+    toolName,
+    description,
+    inStoreDocumentDeleteSchema,
+    withErrorHandler(async (params: { id: number; year?: number }) => {
+      const input = cleanInput({ id: params.id, year: params.year });
+      return executeMutationWithCheck(client, cfg.deleteMutation, { [cfg.varName]: input }, cfg.deleteMutationKey);
+    }),
+  );
 }
 
 // ── Register all warehouse tools ────────────────────────────────────────────
@@ -574,6 +672,223 @@ export function registerWarehouseTools(
     { id: z.number().int().describe("ID skladové zásoby ke smazání") },
     withErrorHandler(async (params) => {
       return executeMutationWithCheck(client, DELETE_WAREHOUSE_STOCK, { warehouseStock: { id: params.id } }, "deleteWarehouseStock");
+    }),
+  );
+
+  // ── Production Notes (Výrobní listy) ──────────────────────────────────────
+
+  server.tool(
+    "list_production_notes",
+    "Vypíše výrobní listy s filtrováním dle data, čísla dokladu, partnera.",
+    inStoreDocumentFilterSchema,
+    withErrorHandler(async (params) => {
+      const { skip, take } = toPaginationArgs(params);
+      const where = buildInStoreDocumentWhere(params);
+      const order = buildOrder(params.sortBy, params.sortDirection);
+      const result = await client.query<CollectionResponse>(LIST_PRODUCTION_NOTES, { skip, take, where, order });
+      return toolListResponse(result.productionNotes.items, result.productionNotes.totalCount, params.page, params.pageSize);
+    }),
+  );
+
+  // ── Stock Taking Documents (Inventurní doklady) ───────────────────────────
+
+  server.tool(
+    "list_stock_taking_documents",
+    "Vypíše inventurní doklady s filtrováním dle roku, popisu nebo ID inventury.",
+    {
+      ...paginationFields,
+      year: z.number().int().optional().describe("Účetní rok"),
+      description: z.string().optional().describe("Popis inventurního dokladu (přesná shoda)"),
+      stockTakingId: z.number().int().optional().describe("ID inventury"),
+      sortBy: z.enum(["stockTakingDocumentId", "lastChangeDate"]).default("lastChangeDate").describe("Řazení podle"),
+      sortDirection: z.enum(["ASC", "DESC"]).default("DESC").describe("Směr řazení"),
+    },
+    withErrorHandler(async (params) => {
+      const { skip, take } = toPaginationArgs(params);
+      const where = buildWhere({
+        year: eqFilter(params.year),
+        description: eqFilter(params.description),
+        stockTakingId: eqFilter(params.stockTakingId),
+      });
+      const order = buildOrder(params.sortBy, params.sortDirection);
+      const result = await client.query<CollectionResponse>(LIST_STOCK_TAKING_DOCUMENTS, { skip, take, where, order });
+      return toolListResponse(result.stockTakingDocuments.items, result.stockTakingDocuments.totalCount, params.page, params.pageSize);
+    }),
+  );
+
+  // ── Stock Taking Types (Typy inventur) ────────────────────────────────────
+
+  server.tool(
+    "list_stock_taking_types",
+    "Vypíše typy inventur.",
+    {
+      ...paginationFields,
+      sortBy: z.enum(["name", "shortCut"]).default("name").describe("Řazení podle"),
+      sortDirection: z.enum(["ASC", "DESC"]).default("ASC").describe("Směr řazení"),
+    },
+    withErrorHandler(async (params) => {
+      const { skip, take } = toPaginationArgs(params);
+      const order = buildOrder(params.sortBy, params.sortDirection);
+      const result = await client.query<CollectionResponse>(LIST_STOCK_TAKING_TYPES, { skip, take, order });
+      return toolListResponse(result.stockTakingTypes.items, result.stockTakingTypes.totalCount, params.page, params.pageSize);
+    }),
+  );
+
+  // ── In-store document Update / Delete tools (6 doc types) ─────────────────
+
+  const inStoreDocTypes: InStoreDocTypeConfig[] = [
+    {
+      typeName: "received_slip",
+      varName: "receivedSlip",
+      updateMutation: UPDATE_RECEIVED_SLIP,
+      deleteMutation: DELETE_RECEIVED_SLIP,
+      updateMutationKey: "updateReceivedSlip",
+      deleteMutationKey: "deleteReceivedSlip",
+      czNameGenitive: "příjemky",
+    },
+    {
+      typeName: "issued_slip",
+      varName: "issuedSlip",
+      updateMutation: UPDATE_ISSUED_SLIP,
+      deleteMutation: DELETE_ISSUED_SLIP,
+      updateMutationKey: "updateIssuedSlip",
+      deleteMutationKey: "deleteIssuedSlip",
+      czNameGenitive: "výdejky",
+    },
+    {
+      typeName: "sale_slip",
+      varName: "saleSlip",
+      updateMutation: UPDATE_SALE_SLIP,
+      deleteMutation: DELETE_SALE_SLIP,
+      updateMutationKey: "updateSaleSlip",
+      deleteMutationKey: "deleteSaleSlip",
+      czNameGenitive: "prodejky",
+    },
+    {
+      typeName: "transfer_note",
+      varName: "transferNote",
+      updateMutation: UPDATE_TRANSFER_NOTE,
+      deleteMutation: DELETE_TRANSFER_NOTE,
+      updateMutationKey: "updateTransferNote",
+      deleteMutationKey: "deleteTransferNote",
+      czNameGenitive: "převodky",
+    },
+    {
+      typeName: "received_delivery_note",
+      varName: "receivedDeliveryNote",
+      updateMutation: UPDATE_RECEIVED_DELIVERY_NOTE,
+      deleteMutation: DELETE_RECEIVED_DELIVERY_NOTE,
+      updateMutationKey: "updateReceivedDeliveryNote",
+      deleteMutationKey: "deleteReceivedDeliveryNote",
+      czNameGenitive: "přijatého dodacího listu",
+    },
+    {
+      typeName: "issued_delivery_note",
+      varName: "issuedDeliveryNote",
+      updateMutation: UPDATE_ISSUED_DELIVERY_NOTE,
+      deleteMutation: DELETE_ISSUED_DELIVERY_NOTE,
+      updateMutationKey: "updateIssuedDeliveryNote",
+      deleteMutationKey: "deleteIssuedDeliveryNote",
+      czNameGenitive: "vydaného dodacího listu",
+    },
+  ];
+
+  for (const cfg of inStoreDocTypes) {
+    registerInStoreDocumentUpdateTool(
+      server,
+      client,
+      `update_${cfg.typeName}`,
+      `Aktualizuje existující doklad (${cfg.czNameGenitive}). Identifikace přes číslo dokladu.`,
+      cfg,
+    );
+
+    registerInStoreDocumentDeleteTool(
+      server,
+      client,
+      `delete_${cfg.typeName}`,
+      `Smaže doklad (${cfg.czNameGenitive}) podle ID.`,
+      cfg,
+    );
+  }
+
+  // ── Create Delivery Notes (Dodací listy) ──────────────────────────────────
+
+  server.tool(
+    "create_received_delivery_note",
+    "Vytvoří přijatý dodací list. Zadej datum, položky s artiklem, množstvím a cenou.",
+    inStoreDocumentInputSchema.shape,
+    withErrorHandler(async (params) => {
+      const receivedDeliveryNote = buildInStoreDocumentInput(params);
+      return executeMutationWithCheck(client, CREATE_RECEIVED_DELIVERY_NOTE, { receivedDeliveryNote }, "createReceivedDeliveryNote");
+    }),
+  );
+
+  server.tool(
+    "create_issued_delivery_note",
+    "Vytvoří vydaný dodací list. Zadej datum, položky s artiklem, množstvím a cenou.",
+    inStoreDocumentInputSchema.shape,
+    withErrorHandler(async (params) => {
+      const issuedDeliveryNote = buildInStoreDocumentInput(params);
+      return executeMutationWithCheck(client, CREATE_ISSUED_DELIVERY_NOTE, { issuedDeliveryNote }, "createIssuedDeliveryNote");
+    }),
+  );
+
+  // ── Stock Taking Document CRUD (Inventurní doklady) ───────────────────────
+
+  server.tool(
+    "create_stock_taking_document",
+    "Vytvoří inventurní doklad. Zadej ID inventury a číslo inventurního dokladu.",
+    {
+      stockTakingDocumentId: z.string().describe("Číslo inventurního dokladu"),
+      stockTakingId: z.number().int().describe("ID inventury"),
+      description: z.string().optional().describe("Popis"),
+      checkedByEmployee: z.string().optional().describe("Zaměstnanec provádějící kontrolu"),
+      note: z.string().optional().describe("Poznámka"),
+    },
+    withErrorHandler(async (params) => {
+      const stockTakingDocument = cleanInput({
+        stockTakingDocumentId: params.stockTakingDocumentId,
+        stockTakingId: params.stockTakingId,
+        description: params.description,
+        checkedByEmployee: params.checkedByEmployee,
+        note: params.note,
+      });
+      return executeMutationWithCheck(client, CREATE_STOCK_TAKING_DOCUMENT, { stockTakingDocument }, "createStockTakingDocument");
+    }),
+  );
+
+  server.tool(
+    "update_stock_taking_document",
+    "Aktualizuje inventurní doklad. Zadej ID inventury a číslo inventurního dokladu.",
+    {
+      stockTakingDocumentId: z.string().describe("Číslo inventurního dokladu"),
+      stockTakingId: z.number().int().describe("ID inventury"),
+      description: z.string().optional().describe("Nový popis"),
+      checkedByEmployee: z.string().optional().describe("Nový zaměstnanec provádějící kontrolu"),
+      note: z.string().optional().describe("Nová poznámka"),
+    },
+    withErrorHandler(async (params) => {
+      const stockTakingDocument = cleanInput({
+        stockTakingDocumentId: params.stockTakingDocumentId,
+        stockTakingId: params.stockTakingId,
+        description: params.description,
+        checkedByEmployee: params.checkedByEmployee,
+        note: params.note,
+      });
+      return executeMutationWithCheck(client, UPDATE_STOCK_TAKING_DOCUMENT, { stockTakingDocument }, "updateStockTakingDocument");
+    }),
+  );
+
+  server.tool(
+    "delete_stock_taking_document",
+    "Smaže inventurní doklad podle ID.",
+    {
+      id: z.number().int().describe("ID inventurního dokladu ke smazání"),
+      year: z.number().int().optional().describe("Účetní rok"),
+    },
+    withErrorHandler(async (params) => {
+      const stockTakingDocument = cleanInput({ id: params.id, year: params.year });
+      return executeMutationWithCheck(client, DELETE_STOCK_TAKING_DOCUMENT, { stockTakingDocument }, "deleteStockTakingDocument");
     }),
   );
 }

@@ -371,6 +371,52 @@ export const LIST_STOCK_TAKINGS = /* GraphQL */ `
   }
 `;
 
+export const LIST_PRODUCTION_NOTES = /* GraphQL */ `
+  query ListProductionNotes($skip: Int, $take: Int, $where: IInStoreDocumentFilterInput, $order: [IInStoreDocumentSortInput!]) {
+    productionNotes(skip: $skip, take: $take, where: $where, order: $order) {
+      totalCount
+      pageInfo { hasNextPage hasPreviousPage }
+      items {
+        ${IN_STORE_DOCUMENT_LIST_FIELDS}
+      }
+    }
+  }
+`;
+
+export const LIST_STOCK_TAKING_DOCUMENTS = /* GraphQL */ `
+  query ListStockTakingDocuments($skip: Int, $take: Int, $where: IStockTakingDocumentFilterInput, $order: [IStockTakingDocumentSortInput!]) {
+    stockTakingDocuments(skip: $skip, take: $take, where: $where, order: $order) {
+      totalCount
+      items {
+        id
+        stockTakingId
+        stockTakingDocumentId
+        description
+        issuedByEmployee
+        checkedByEmployee
+        note
+        lastChangeDate
+        year
+      }
+    }
+  }
+`;
+
+export const LIST_STOCK_TAKING_TYPES = /* GraphQL */ `
+  query ListStockTakingTypes($skip: Int, $take: Int, $where: StockTakingTypeFilter, $order: [IStockTakingTypeSortInput!]) {
+    stockTakingTypes(skip: $skip, take: $take, where: $where, order: $order) {
+      totalCount
+      items {
+        id
+        lastChange
+        name
+        note
+        shortCut
+      }
+    }
+  }
+`;
+
 /** Detail query for any in-store document type (slips, delivery notes, transfers). */
 export const GET_IN_STORE_DOCUMENT = /* GraphQL */ `
   query GetInStoreDocument($skip: Int, $take: Int, $where: IInStoreDocumentFilterInput) {

@@ -261,3 +261,48 @@ export const LIST_PARAMETERS = /* GraphQL */ `
     }
   }
 `;
+
+export const LIST_BANKS = /* GraphQL */ `
+  query ListBanks($skip: Int, $take: Int, $where: IBankFilterInput, $order: [IBankSortInput!]) {
+    banks(skip: $skip, take: $take, where: $where, order: $order) {
+      totalCount
+      items {
+        name
+        shortCut
+        code
+        swift
+        countryCode
+      }
+    }
+  }
+`;
+
+export const LIST_COMBINED_NOMENCLATURES = /* GraphQL */ `
+  query ListCombinedNomenclatures($skip: Int, $take: Int, $where: ICombinedNomenclatureFilterInput, $order: [ICombinedNomenclatureSortInput!]) {
+    combinedNomenclatures(skip: $skip, take: $take, where: $where, order: $order) {
+      totalCount
+      items {
+        code
+        name
+        measureUnit
+        type
+      }
+    }
+  }
+`;
+
+export const LIST_MUNICIPALITY_POSTAL_CODES = /* GraphQL */ `
+  query ListMunicipalityPostalCodes($skip: Int, $take: Int, $where: IMunicipalityPostalCodeFilterInput, $order: [IMunicipalityPostalCodeSortInput!]) {
+    municipalityPostalCodes(skip: $skip, take: $take, where: $where, order: $order) {
+      totalCount
+      items {
+        municipality
+        postalCode
+        post
+        phonePrefix
+        countryCode
+        region
+      }
+    }
+  }
+`;
