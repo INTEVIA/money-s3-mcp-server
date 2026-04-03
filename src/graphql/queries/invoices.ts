@@ -21,48 +21,24 @@ export const LIST_ISSUED_INVOICES = /* GraphQL */ `
         documentNumber
         description
         variableSymbol
-        specificSymbol
-        pairingSymbol
-        orderNumber
         invoiceType
         isCreditNote
         cancel
         dateOfIssue
-        dateOfTaxing
         dateOfMaturity
         dateOfPayment
-        dateOfAccountingEvent
         totalWithVatHc
-        amountToPayHc
         remainingAmountToPayHc
-        amountToPay
-        remainingAmountToPay
         isBilled
-        isDeleted
-        paymentMethod
-        shippingMethod
         year
-        lastChangeDate
         partnerAddress {
           identificationNumber
-          vatIdentificationNumber
           businessAddress {
             name
-            street
-            municipality
-            postalCode
-            country
           }
         }
-        exchangeRate
-        exchangeRateAmount
         currency {
           code
-          exchangeRateAmount
-        }
-        numericalSerie {
-          prefix
-          number
         }
       }
     }
@@ -285,40 +261,23 @@ export const LIST_RECEIVED_INVOICES = /* GraphQL */ `
         documentNumber
         description
         variableSymbol
-        specificSymbol
         receivedDocumentNumber
-        pairingSymbol
         invoiceType
         isCreditNote
         cancel
         dateOfIssue
-        dateOfTaxing
         dateOfMaturity
         dateOfPayment
-        dateOfAccountingEvent
         totalWithVatHc
-        amountToPayHc
         remainingAmountToPayHc
-        amountToPay
-        remainingAmountToPay
         isBilled
-        isDeleted
-        paymentMethod
         year
-        lastChangeDate
         partnerAddress {
           identificationNumber
-          vatIdentificationNumber
           businessAddress {
             name
-            street
-            municipality
-            postalCode
-            country
           }
         }
-        exchangeRate
-        exchangeRateAmount
         currency {
           code
           exchangeRateAmount

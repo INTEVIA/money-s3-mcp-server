@@ -49,7 +49,7 @@ export const LIST_COMPANIES = /* GraphQL */ `
         }
         addressGroup {
           shortCut
-          description
+          name
         }
       }
     }
@@ -138,32 +138,32 @@ export const GET_COMPANY = /* GraphQL */ `
         }
         addressGroup {
           shortCut
-          description
+          name
         }
         bankAccounts {
-          shortCut
-          description
+          accountNumber
+          purpose
         }
         operations {
           shortCut
-          description
+          name
         }
         priceLevels {
           shortCut
-          description
+          name
         }
         contactPersons {
+          guid
           name
           surname
           position
           email
           phoneNumber
           mobileNumber
-          isCeo
         }
         branches {
-          shortCut
-          description
+          guid
+          code
         }
       }
     }

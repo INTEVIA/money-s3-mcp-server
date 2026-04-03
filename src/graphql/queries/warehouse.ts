@@ -210,13 +210,12 @@ const IN_STORE_DOCUMENT_DETAIL_FIELDS = /* GraphQL */ `
   centre { shortCut name }
   jobOrder { shortCut name }
   operation { shortCut name }
-  items {
+  stockItems {
     description
     amountUnit
     unitPriceHc
     unitPrice
     vatRate
-    purchasePrice
     stockItemType
     weight
     note

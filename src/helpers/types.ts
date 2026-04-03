@@ -60,9 +60,9 @@ export const paginationFields = {
     .number()
     .int()
     .min(1)
-    .max(100)
+    .max(50)
     .default(20)
-    .describe("Počet záznamů na stránku (výchozí 20, max 100)"),
+    .describe("Počet záznamů na stránku (výchozí 20, max 50)"),
 };
 
 // ---------------------------------------------------------------------------

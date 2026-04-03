@@ -207,7 +207,6 @@ export const LIST_BANK_STATEMENTS = /* GraphQL */ `
       totalCount
       items {
         id
-        guid
         year
         documentNumber
         bankStatementNumber
@@ -262,7 +261,6 @@ export const GET_BANK_STATEMENT = /* GraphQL */ `
     bankStatements(skip: 0, take: 1, where: $where) {
       items {
         id
-        guid
         year
         documentNumber
         registrationNumber
@@ -376,7 +374,6 @@ export const LIST_INTERNAL_DOCUMENTS = /* GraphQL */ `
       totalCount
       items {
         id
-        guid
         year
         documentNumber
         description
@@ -423,7 +420,6 @@ export const GET_INTERNAL_DOCUMENT = /* GraphQL */ `
     internalDocuments(skip: 0, take: 1, where: $where) {
       items {
         id
-        guid
         year
         documentNumber
         receivedDocumentNumber
@@ -530,7 +526,6 @@ export const LIST_LIABILITIES = /* GraphQL */ `
       totalCount
       items {
         id
-        guid
         year
         documentNumber
         description
@@ -583,7 +578,6 @@ export const GET_LIABILITY = /* GraphQL */ `
     liabilities(skip: 0, take: 1, where: $where) {
       items {
         id
-        guid
         year
         documentNumber
         receivedDocumentNumber
@@ -708,7 +702,6 @@ export const LIST_RECEIVABLES = /* GraphQL */ `
       totalCount
       items {
         id
-        guid
         year
         documentNumber
         description
@@ -762,7 +755,6 @@ export const GET_RECEIVABLE = /* GraphQL */ `
     receivables(skip: 0, take: 1, where: $where) {
       items {
         id
-        guid
         year
         documentNumber
         description
