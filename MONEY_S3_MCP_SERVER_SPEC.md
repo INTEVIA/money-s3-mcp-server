@@ -146,6 +146,9 @@ MONEY_S3_PASSWORD=                         # User password
 # Optional
 MONEY_S3_LOCAL=false                       # true = local access (localhost:85)
 
+# Optional — pagination
+MAX_PAGE_SIZE=50                           # Max records per page (default 50, increase for powerful models)
+
 # Optional — import polling
 IMPORT_POLL_TIMEOUT_MS=30000               # Max wait time for import (default 30s)
 IMPORT_POLL_INTERVAL_MS=1000               # Poll interval (default 1s)
@@ -360,9 +363,17 @@ Filtering via `where` parameter with rich operator logic:
 - Same as numeric: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `nin`
 - Format: ISO 8601 string (e.g., `"2025-01-15"`)
 
-#### String Operators (EqualNonEqualStringOperationFilterInput)
-- **Only `eq`, `neq`** — exact match / not equals
-- **No `contains`, `startsWith`, or regex available**
+#### String Operators — TWO TYPES EXIST
+
+**`StringOperationFilterInput`** (full): `eq`, `neq`, `contains`, `ncontains`, `startsWith`, `nstartsWith`, `endsWith`, `nendsWith`, `in`, `nin`
+- Used by: article `description`/`shortcut`, some codebook fields
+- In tools: use `containsFilter()` helper
+
+**`EqualNonEqualStringOperationFilterInput`** (restricted): `eq`, `neq` only
+- Used by: most document-level fields (`documentNumber`, `variableSymbol`, `description`), company `businessAddress.name`, warehouse stock fields
+- In tools: use `eqFilter()` helper
+
+**Always check `schema.graphql`** for which filter type each field uses before choosing the helper.
 
 #### Boolean Operators
 - `eq`, `neq`
@@ -613,7 +624,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 const listIssuedInvoicesSchema = z.object({
   page: z.number().int().min(1).default(1).describe("Page number"),
-  pageSize: z.number().int().min(1).max(200).default(20).describe("Records per page (max from MAX_PAGE_SIZE env)"),
+  pageSize: z.number().int().min(1).max(200).default(20).describe("Records per page (runtime clamped by MAX_PAGE_SIZE, default 50)"),
   dateFrom: z.string().optional().describe("Date of issue from (YYYY-MM-DD)"),
   dateTo: z.string().optional().describe("Date of issue to (YYYY-MM-DD)"),
   documentNumber: z.string().optional().describe("Document number (exact match)"),

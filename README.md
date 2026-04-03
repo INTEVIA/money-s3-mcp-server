@@ -314,12 +314,12 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 
 | Nastroj | Popis |
 |---------|-------|
-| `list_issued_invoices` | Vydane faktury s filtrovanim dle data, firmy, cisla dokladu |
+| `list_issued_invoices` | Vydane faktury s filtrovanim dle data, firmy, neuhrazene castky |
 | `get_issued_invoice` | Detail vydane faktury vcetne polozek, plateb, DPH souhrnu |
 | `create_issued_invoice` | Vytvori vydanou fakturu s polozkami |
 | `update_issued_invoice` | Aktualizuje vydanou fakturu (identifikace pres GUID) |
 | `delete_issued_invoice` | Smaze vydanou fakturu |
-| `list_received_invoices` | Prijate faktury s filtrovanim |
+| `list_received_invoices` | Prijate faktury s filtrovanim dle data, firmy, neuhrazene castky |
 | `get_received_invoice` | Detail prijate faktury |
 | `create_received_invoice` | Vytvori prijatou fakturu |
 | `update_received_invoice` | Aktualizuje prijatou fakturu |
@@ -339,12 +339,12 @@ AI klient (napr. Claude Desktop Remote, vlastni agent) se pripojuje takto:
 
 | Nastroj | Popis |
 |---------|-------|
-| `list_cash_vouchers` | Pokladni doklady s filtrovanim dle data |
+| `list_cash_vouchers` | Pokladni doklady s filtrovanim dle data, pokladny, popisu |
 | `get_cash_voucher` | Detail pokladniho dokladu |
 | `create_cash_voucher` | Vytvori pokladni doklad |
 | `update_cash_voucher` | Aktualizuje pokladni doklad |
 | `delete_cash_voucher` | Smaze pokladni doklad |
-| `list_bank_statements` | Bankovni vypisy s filtrovanim |
+| `list_bank_statements` | Bankovni vypisy s filtrovanim dle data, bankovniho uctu, popisu |
 | `get_bank_statement` | Detail bankovniho vypisu |
 | `create_bank_statement` | Vytvori bankovni vypis |
 | `update_bank_statement` | Aktualizuje bankovni vypis |
@@ -557,7 +557,7 @@ src/
 ├── graphql/
 │   ├── client.ts                # GraphQL klient s automatickou autentizaci a timeouty
 │   ├── queries/ (10 souboru)    # GraphQL dotazy dle domeny
-│   └── mutations/ (7 souboru)   # GraphQL mutace dle domeny
+│   └── mutations/ (8 souboru)   # GraphQL mutace dle domeny
 ├── tools/ (10 souboru)          # 187 MCP nastroju
 ├── helpers/
 │   ├── types.ts                 # Sdilene typy, rozhrani a Zod schemata
