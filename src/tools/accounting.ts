@@ -28,17 +28,25 @@ function registerSimpleListTool(
   description: string,
   query: string,
   responseKey: string,
+  defaultSortBy = "shortCut",
+  sortableFields: [string, ...string[]] = ["shortCut"],
 ): void {
   server.tool(
     toolName,
     description,
-    paginationFields,
+    {
+      ...paginationFields,
+      sortBy: z.enum(sortableFields).default(defaultSortBy).describe("Pole pro řazení"),
+      sortDirection: z.enum(["ASC", "DESC"]).default("ASC").describe("Směr řazení"),
+    },
     withErrorHandler(async (params) => {
       const { skip, take } = toPaginationArgs(params);
+      const order = buildOrder(params.sortBy, params.sortDirection);
 
       const result = await client.query<CollectionResponse>(query, {
         skip,
         take,
+        order,
       });
 
       return toolListResponse(
@@ -117,10 +125,10 @@ export function registerAccountingTools(
     }),
   );
 
-  registerSimpleListTool(server, client, "list_account_assignments_acc", "Vypíše předkontace (podvojné účetnictví)", LIST_ACCOUNT_ASSIGNMENT_ACCS, "accountAssignmentAccs");
-  registerSimpleListTool(server, client, "list_account_assignments_tr", "Vypíše předkontace (daňová evidence)", LIST_ACCOUNT_ASSIGNMENT_TRS, "accountAssignmentTrs");
-  registerSimpleListTool(server, client, "list_account_movements", "Vypíše účetní pohyby (daňová evidence)", LIST_ACCOUNT_MOVEMENTS, "accountMovements");
-  registerSimpleListTool(server, client, "list_vat_accounting_accs", "Vypíše účtování DPH (podvojné účetnictví)", LIST_VAT_ACCOUNTING_ACCS, "vatAccountingAccs");
-  registerSimpleListTool(server, client, "list_vat_accounting_trs", "Vypíše účtování DPH (daňová evidence)", LIST_VAT_ACCOUNTING_TRS, "vatAccountingTrs");
-  registerSimpleListTool(server, client, "list_non_monetary_payments", "Vypíše nepeněžní platidla (stravenky, poukázky apod.)", LIST_NON_MONETARY_PAYMENTS, "nonMonetaryPayments");
+  registerSimpleListTool(server, client, "list_account_assignments_acc", "Vypíše předkontace (podvojné účetnictví)", LIST_ACCOUNT_ASSIGNMENT_ACCS, "accountAssignmentAccs", "shortCut", ["shortCut", "type"]);
+  registerSimpleListTool(server, client, "list_account_assignments_tr", "Vypíše předkontace (daňová evidence)", LIST_ACCOUNT_ASSIGNMENT_TRS, "accountAssignmentTrs", "shortCut", ["shortCut", "type"]);
+  registerSimpleListTool(server, client, "list_account_movements", "Vypíše účetní pohyby (daňová evidence)", LIST_ACCOUNT_MOVEMENTS, "accountMovements", "shortCut", ["shortCut", "type"]);
+  registerSimpleListTool(server, client, "list_vat_accounting_accs", "Vypíše účtování DPH (podvojné účetnictví)", LIST_VAT_ACCOUNTING_ACCS, "vatAccountingAccs", "shortCut", ["shortCut", "type"]);
+  registerSimpleListTool(server, client, "list_vat_accounting_trs", "Vypíše účtování DPH (daňová evidence)", LIST_VAT_ACCOUNTING_TRS, "vatAccountingTrs", "shortCut", ["shortCut", "type"]);
+  registerSimpleListTool(server, client, "list_non_monetary_payments", "Vypíše nepeněžní platidla (stravenky, poukázky apod.)", LIST_NON_MONETARY_PAYMENTS, "nonMonetaryPayments", "shortCut", ["shortCut"]);
 }

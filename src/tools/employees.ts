@@ -7,14 +7,13 @@ import { buildWhere, buildOrder } from "../helpers/filters.js";
 import {
   toolError,
   toolListResponse,
-  toolMutationResponse,
   toolSuccess,
   withErrorHandler,
 } from "../helpers/response.js";
+import { executeMutationWithCheck } from "../helpers/mutation.js";
 import {
   paginationFields,
   type CollectionResponse,
-  type ImportPromiseResponse,
 } from "../helpers/types.js";
 import {
   LIST_EMPLOYEES,
@@ -222,17 +221,7 @@ export function registerEmployeeTools(
         wage.employmentRelationships = params.employmentRelationships;
       }
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_WAGE,
-        { wage },
-      );
-
-      if (!result.createWage.isSuccess) {
-        return toolError("Požadavek na vytvoření mzdy nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createWage.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_WAGE, { wage }, "createWage");
     }),
   );
 
@@ -285,17 +274,7 @@ export function registerEmployeeTools(
         wage.employmentRelationships = params.employmentRelationships;
       }
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_WAGE,
-        { wage },
-      );
-
-      if (!result.updateWage.isSuccess) {
-        return toolError("Požadavek na aktualizaci mzdy nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateWage.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_WAGE, { wage }, "updateWage");
     }),
   );
 
@@ -309,17 +288,7 @@ export function registerEmployeeTools(
       id: z.number().describe("ID mzdy ke smazání"),
     },
     withErrorHandler(async (params) => {
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_WAGE,
-        { wage: { id: params.id } },
-      );
-
-      if (!result.deleteWage.isSuccess) {
-        return toolError("Požadavek na smazání mzdy nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteWage.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_WAGE, { wage: { id: params.id } }, "deleteWage");
     }),
   );
 }

@@ -328,7 +328,7 @@ query {
 
 - `skip` — number of records to skip (offset)
 - `take` — number of records to return (limit)
-- **MCP tools should expose**: `page` (default 1) and `pageSize` (default 20, max 50)
+- **MCP tools should expose**: `page` (default 1) and `pageSize` (default 20, max configurable via MAX_PAGE_SIZE env (default 50))
 - **Internally convert**: `skip = (page - 1) * pageSize`, `take = pageSize`
 - Always return `totalCount` in responses for context
 
@@ -613,7 +613,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 const listIssuedInvoicesSchema = z.object({
   page: z.number().int().min(1).default(1).describe("Page number"),
-  pageSize: z.number().int().min(1).max(50).default(20).describe("Records per page"),
+  pageSize: z.number().int().min(1).max(200).default(20).describe("Records per page (max from MAX_PAGE_SIZE env)"),
   dateFrom: z.string().optional().describe("Date of issue from (YYYY-MM-DD)"),
   dateTo: z.string().optional().describe("Date of issue to (YYYY-MM-DD)"),
   documentNumber: z.string().optional().describe("Document number (exact match)"),

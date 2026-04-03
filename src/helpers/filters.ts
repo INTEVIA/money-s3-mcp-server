@@ -23,6 +23,19 @@ export function eqFilter<T extends string | number | boolean>(
   return { eq: value };
 }
 
+/**
+ * Build a contains filter: { contains: value }.
+ * Use for fields with StringOperationFilterInput (supports contains).
+ * Falls back to { eq: value } for fields with EqualNonEqualStringOperationFilterInput.
+ * Check schema.graphql to know which filter type a field uses.
+ */
+export function containsFilter(
+  value: string | undefined,
+): { contains: string } | undefined {
+  if (value === undefined || value === "") return undefined;
+  return { contains: value };
+}
+
 /** Build a nested sub-filter for partner address by ICO */
 export function partnerIcoFilter(
   ico?: string,

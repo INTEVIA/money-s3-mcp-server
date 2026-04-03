@@ -46,6 +46,9 @@ MONEY_S3_PASSWORD=                         # Heslo
 # Volitelne — lokalni pristup
 MONEY_S3_LOCAL=false                       # true = localhost:85
 
+# Volitelne — paginace
+MAX_PAGE_SIZE=50                           # Max zaznamu na stranku (vychozi 50, zvyste pro vykonnejsi modely)
+
 # Volitelne — import polling
 IMPORT_POLL_TIMEOUT_MS=30000               # Max cekani na async import (ms)
 IMPORT_POLL_INTERVAL_MS=1000               # Interval pollingu (ms)

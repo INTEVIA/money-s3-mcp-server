@@ -14,13 +14,12 @@ import {
   toolSuccess,
   toolError,
   toolListResponse,
-  toolMutationResponse,
   withErrorHandler,
 } from "../helpers/response.js";
+import { executeMutationWithCheck } from "../helpers/mutation.js";
 import {
   paginationFields,
   type CollectionResponse,
-  type ImportPromiseResponse,
 } from "../helpers/types.js";
 import {
   LIST_ISSUED_INVOICES,
@@ -460,18 +459,7 @@ export function registerInvoiceTools(
     withErrorHandler(async (params) => {
       const input = buildInvoiceInput(params);
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_ISSUED_INVOICE,
-        { issuedInvoice: input },
-      );
-
-      const promise = result.createIssuedInvoice;
-      if (!promise.isSuccess) {
-        return toolError("Požadavek na vytvoření vydané faktury nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_ISSUED_INVOICE, { issuedInvoice: input }, "createIssuedInvoice");
     }),
   );
 
@@ -546,20 +534,7 @@ export function registerInvoiceTools(
       const input = buildInvoiceInput(params);
       input.guid = params.guid;
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_ISSUED_INVOICE,
-        { issuedInvoice: input },
-      );
-
-      const promise = result.updateIssuedInvoice;
-      if (!promise.isSuccess) {
-        return toolError(
-          "Požadavek na aktualizaci vydané faktury nebyl přijat",
-        );
-      }
-
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_ISSUED_INVOICE, { issuedInvoice: input }, "updateIssuedInvoice");
     }),
   );
 
@@ -577,18 +552,7 @@ export function registerInvoiceTools(
       const input: Record<string, unknown> = { id: params.id };
       if (params.year !== undefined) input.year = params.year;
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_ISSUED_INVOICE,
-        { issuedInvoice: input },
-      );
-
-      const promise = result.deleteIssuedInvoice;
-      if (!promise.isSuccess) {
-        return toolError("Požadavek na smazání vydané faktury nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_ISSUED_INVOICE, { issuedInvoice: input }, "deleteIssuedInvoice");
     }),
   );
 
@@ -754,20 +718,7 @@ export function registerInvoiceTools(
     withErrorHandler(async (params) => {
       const input = buildInvoiceInput(params);
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_RECEIVED_INVOICE,
-        { receivedInvoice: input },
-      );
-
-      const promise = result.createReceivedInvoice;
-      if (!promise.isSuccess) {
-        return toolError(
-          "Požadavek na vytvoření přijaté faktury nebyl přijat",
-        );
-      }
-
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_RECEIVED_INVOICE, { receivedInvoice: input }, "createReceivedInvoice");
     }),
   );
 
@@ -837,20 +788,7 @@ export function registerInvoiceTools(
       const input = buildInvoiceInput(params);
       input.guid = params.guid;
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_RECEIVED_INVOICE,
-        { receivedInvoice: input },
-      );
-
-      const promise = result.updateReceivedInvoice;
-      if (!promise.isSuccess) {
-        return toolError(
-          "Požadavek na aktualizaci přijaté faktury nebyl přijat",
-        );
-      }
-
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_RECEIVED_INVOICE, { receivedInvoice: input }, "updateReceivedInvoice");
     }),
   );
 
@@ -868,18 +806,7 @@ export function registerInvoiceTools(
       const input: Record<string, unknown> = { id: params.id };
       if (params.year !== undefined) input.year = params.year;
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_RECEIVED_INVOICE,
-        { receivedInvoice: input },
-      );
-
-      const promise = result.deleteReceivedInvoice;
-      if (!promise.isSuccess) {
-        return toolError("Požadavek na smazání přijaté faktury nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_RECEIVED_INVOICE, { receivedInvoice: input }, "deleteReceivedInvoice");
     }),
   );
 }

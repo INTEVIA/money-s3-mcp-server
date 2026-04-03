@@ -58,6 +58,7 @@ import {
   buildOrder,
   dateRangeFilter,
   eqFilter,
+  containsFilter,
 } from "../helpers/filters.js";
 import {
   toolSuccess,
@@ -274,8 +275,8 @@ export function registerWarehouseTools(
     "Vypíše skladové karty (artikly) s filtrováním dle názvu, kódu, čárového kódu. Použij pro vyhledání artiklu.",
     {
       ...paginationFields,
-      description: z.string().optional().describe("Popis artiklu (přesná shoda)"),
-      shortcut: z.string().optional().describe("Zkratka artiklu (přesná shoda)"),
+      description: z.string().optional().describe("Popis artiklu (obsahuje)"),
+      shortcut: z.string().optional().describe("Zkratka artiklu (obsahuje)"),
       barCode: z.string().optional().describe("Čárový kód (přesná shoda)"),
       catalogue: z.string().optional().describe("Katalogové číslo (přesná shoda)"),
       plu: z.string().optional().describe("PLU kód (přesná shoda)"),
@@ -285,8 +286,8 @@ export function registerWarehouseTools(
     withErrorHandler(async (params) => {
       const { skip, take } = toPaginationArgs(params);
       const where = buildWhere({
-        description: eqFilter(params.description),
-        shortcut: eqFilter(params.shortcut),
+        description: containsFilter(params.description),
+        shortcut: containsFilter(params.shortcut),
         barCode: eqFilter(params.barCode),
         catalogue: eqFilter(params.catalogue),
         plu: eqFilter(params.plu),

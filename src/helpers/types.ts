@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { getMaxPageSize } from "./pagination.js";
 
 // ---------------------------------------------------------------------------
 // GraphQL response types
@@ -48,7 +49,11 @@ export interface YearsResponse {
 // Shared Zod field schemas
 // ---------------------------------------------------------------------------
 
-/** Reusable pagination fields — use with spread in tool schemas. */
+/**
+ * Reusable pagination fields — use with spread in tool schemas.
+ * Max page size is configurable via MAX_PAGE_SIZE env var.
+ * Note: Zod .max() uses a getter so it reflects the runtime config value.
+ */
 export const paginationFields = {
   page: z
     .number()
@@ -60,9 +65,9 @@ export const paginationFields = {
     .number()
     .int()
     .min(1)
-    .max(50)
+    .max(200)
     .default(20)
-    .describe("Počet záznamů na stránku (výchozí 20, max 50)"),
+    .describe(`Počet záznamů na stránku (výchozí 20, max viz MAX_PAGE_SIZE)`),
 };
 
 // ---------------------------------------------------------------------------

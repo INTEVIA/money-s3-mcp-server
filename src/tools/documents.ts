@@ -12,7 +12,6 @@ import {
 import {
   toolError,
   toolListResponse,
-  toolMutationResponse,
   toolSuccess,
   withErrorHandler,
 } from "../helpers/response.js";
@@ -20,8 +19,8 @@ import {
   paginationFields,
   cleanInput,
   type CollectionResponse,
-  type ImportPromiseResponse,
 } from "../helpers/types.js";
+import { executeMutationWithCheck } from "../helpers/mutation.js";
 import {
   LIST_CASH_VOUCHERS,
   GET_CASH_VOUCHER,
@@ -214,17 +213,7 @@ export function registerDocumentTools(
             : undefined,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_CASH_VOUCHER,
-        { cashVoucher },
-      );
-
-      if (!result.createCashVoucher.isSuccess) {
-        return toolError("Požadavek na vytvoření pokladního dokladu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createCashVoucher.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_CASH_VOUCHER, { cashVoucher }, "createCashVoucher");
     }),
   );
 
@@ -267,17 +256,7 @@ export function registerDocumentTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_CASH_VOUCHER,
-        { cashVoucher },
-      );
-
-      if (!result.updateCashVoucher.isSuccess) {
-        return toolError("Požadavek na aktualizaci pokladního dokladu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateCashVoucher.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_CASH_VOUCHER, { cashVoucher }, "updateCashVoucher");
     }),
   );
 
@@ -294,17 +273,7 @@ export function registerDocumentTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_CASH_VOUCHER,
-        { cashVoucher },
-      );
-
-      if (!result.deleteCashVoucher.isSuccess) {
-        return toolError("Požadavek na smazání pokladního dokladu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteCashVoucher.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_CASH_VOUCHER, { cashVoucher }, "deleteCashVoucher");
     }),
   );
 
@@ -447,17 +416,7 @@ export function registerDocumentTools(
             : undefined,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_BANK_STATEMENT,
-        { bankStatement },
-      );
-
-      if (!result.createBankStatement.isSuccess) {
-        return toolError("Požadavek na vytvoření bankovního výpisu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createBankStatement.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_BANK_STATEMENT, { bankStatement }, "createBankStatement");
     }),
   );
 
@@ -511,17 +470,7 @@ export function registerDocumentTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_BANK_STATEMENT,
-        { bankStatement },
-      );
-
-      if (!result.updateBankStatement.isSuccess) {
-        return toolError("Požadavek na aktualizaci bankovního výpisu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateBankStatement.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_BANK_STATEMENT, { bankStatement }, "updateBankStatement");
     }),
   );
 
@@ -538,17 +487,7 @@ export function registerDocumentTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_BANK_STATEMENT,
-        { bankStatement },
-      );
-
-      if (!result.deleteBankStatement.isSuccess) {
-        return toolError("Požadavek na smazání bankovního výpisu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteBankStatement.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_BANK_STATEMENT, { bankStatement }, "deleteBankStatement");
     }),
   );
 
@@ -690,17 +629,7 @@ export function registerDocumentTools(
             : undefined,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_INTERNAL_DOCUMENT,
-        { internalDocument },
-      );
-
-      if (!result.createInternalDocument.isSuccess) {
-        return toolError("Požadavek na vytvoření interního dokladu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createInternalDocument.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_INTERNAL_DOCUMENT, { internalDocument }, "createInternalDocument");
     }),
   );
 
@@ -735,17 +664,7 @@ export function registerDocumentTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_INTERNAL_DOCUMENT,
-        { internalDocument },
-      );
-
-      if (!result.updateInternalDocument.isSuccess) {
-        return toolError("Požadavek na aktualizaci interního dokladu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateInternalDocument.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_INTERNAL_DOCUMENT, { internalDocument }, "updateInternalDocument");
     }),
   );
 
@@ -762,17 +681,7 @@ export function registerDocumentTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_INTERNAL_DOCUMENT,
-        { internalDocument },
-      );
-
-      if (!result.deleteInternalDocument.isSuccess) {
-        return toolError("Požadavek na smazání interního dokladu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteInternalDocument.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_INTERNAL_DOCUMENT, { internalDocument }, "deleteInternalDocument");
     }),
   );
 
@@ -926,17 +835,7 @@ export function registerDocumentTools(
             : undefined,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_LIABILITY,
-        { liability },
-      );
-
-      if (!result.createLiability.isSuccess) {
-        return toolError("Požadavek na vytvoření závazku nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createLiability.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_LIABILITY, { liability }, "createLiability");
     }),
   );
 
@@ -976,17 +875,7 @@ export function registerDocumentTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_LIABILITY,
-        { liability },
-      );
-
-      if (!result.updateLiability.isSuccess) {
-        return toolError("Požadavek na aktualizaci závazku nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateLiability.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_LIABILITY, { liability }, "updateLiability");
     }),
   );
 
@@ -1003,17 +892,7 @@ export function registerDocumentTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_LIABILITY,
-        { liability },
-      );
-
-      if (!result.deleteLiability.isSuccess) {
-        return toolError("Požadavek na smazání závazku nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteLiability.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_LIABILITY, { liability }, "deleteLiability");
     }),
   );
 
@@ -1164,17 +1043,7 @@ export function registerDocumentTools(
             : undefined,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_RECEIVABLE,
-        { receivable },
-      );
-
-      if (!result.createReceivable.isSuccess) {
-        return toolError("Požadavek na vytvoření pohledávky nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createReceivable.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_RECEIVABLE, { receivable }, "createReceivable");
     }),
   );
 
@@ -1216,17 +1085,7 @@ export function registerDocumentTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_RECEIVABLE,
-        { receivable },
-      );
-
-      if (!result.updateReceivable.isSuccess) {
-        return toolError("Požadavek na aktualizaci pohledávky nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateReceivable.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_RECEIVABLE, { receivable }, "updateReceivable");
     }),
   );
 
@@ -1243,17 +1102,7 @@ export function registerDocumentTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_RECEIVABLE,
-        { receivable },
-      );
-
-      if (!result.deleteReceivable.isSuccess) {
-        return toolError("Požadavek na smazání pohledávky nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteReceivable.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_RECEIVABLE, { receivable }, "deleteReceivable");
     }),
   );
 }

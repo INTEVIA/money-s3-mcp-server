@@ -27,7 +27,10 @@ import { registerAgendaTools } from "./tools/agenda.js";
 async function main() {
   const config = loadConfig();
 
-  // Apply global legislation override from env (if set)
+  // Apply global settings from config
+  const { setMaxPageSize } = await import("./helpers/pagination.js");
+  setMaxPageSize(config.maxPageSize);
+
   if (config.legislation) {
     const { setGlobalLegislation } = await import("./helpers/legislation.js");
     setGlobalLegislation(config.legislation);
@@ -142,8 +145,24 @@ async function startHttpTransport(
     );
   }
 
-  // Session map: sessionId → transport (for reconnects within the same session)
-  const sessions = new Map<string, StreamableHTTPServerTransport>();
+  // Session map: sessionId → { transport, lastActivity }
+  const sessions = new Map<
+    string,
+    { transport: StreamableHTTPServerTransport; lastActivity: number }
+  >();
+
+  // Session TTL: close sessions idle for more than 30 minutes
+  const SESSION_TTL_MS = 30 * 60 * 1000;
+  const sessionCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [id, session] of sessions) {
+      if (now - session.lastActivity > SESSION_TTL_MS) {
+        console.error(`Uzavírám neaktivní session ${id}`);
+        session.transport.close().catch(() => {});
+        sessions.delete(id);
+      }
+    }
+  }, 60_000);
 
   const httpServer = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
@@ -175,8 +194,9 @@ async function startHttpTransport(
 
       // Reuse existing session transport if available
       if (sessionId && sessions.has(sessionId)) {
-        const existing = sessions.get(sessionId)!;
-        await existing.handleRequest(req, res);
+        const session = sessions.get(sessionId)!;
+        session.lastActivity = Date.now();
+        await session.transport.handleRequest(req, res);
         return;
       }
 
@@ -184,7 +204,7 @@ async function startHttpTransport(
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (id) => {
-          sessions.set(id, transport);
+          sessions.set(id, { transport, lastActivity: Date.now() });
         },
       });
 
@@ -212,8 +232,9 @@ async function startHttpTransport(
 
   const shutdown = async () => {
     console.error("Ukončuji server...");
-    for (const transport of sessions.values()) {
-      await transport.close();
+    clearInterval(sessionCleanupInterval);
+    for (const session of sessions.values()) {
+      await session.transport.close();
     }
     httpServer.close();
     process.exit(0);

@@ -15,6 +15,7 @@ const configSchema = z.object({
   port: z.number().int().positive().default(3000),
   authToken: z.string().optional(),
   legislation: z.enum(["CZ", "SK"]).optional(),
+  maxPageSize: z.number().int().min(10).max(200).default(50),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -35,5 +36,6 @@ export function loadConfig(): Config {
     port: parseInt(process.env.MCP_PORT || "3000", 10),
     authToken: process.env.MCP_AUTH_TOKEN || undefined,
     legislation: process.env.MONEY_S3_LEGISLATION || undefined,
+    maxPageSize: parseInt(process.env.MAX_PAGE_SIZE || "50", 10),
   });
 }

@@ -7,15 +7,14 @@ import { eqFilter, buildWhere, buildOrder } from "../helpers/filters.js";
 import {
   toolError,
   toolListResponse,
-  toolMutationResponse,
   toolSuccess,
   withErrorHandler,
 } from "../helpers/response.js";
+import { executeMutationWithCheck } from "../helpers/mutation.js";
 import {
   paginationFields,
   cleanInput,
   type CollectionResponse,
-  type ImportPromiseResponse,
   type YearsResponse,
 } from "../helpers/types.js";
 import {
@@ -177,13 +176,7 @@ export function registerAgendaTools(
         jobOrder.jobOrderType = { shortCut: params.jobOrderTypeShortCut };
       }
 
-      const result = await client.mutate<ImportPromiseResponse>(CREATE_JOB_ORDER, { jobOrder });
-      const promise = result.createJobOrder;
-      if (!promise.isSuccess) {
-        return toolError("Požadavek na vytvoření zakázky nebyl přijat");
-      }
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_JOB_ORDER, { jobOrder }, "createJobOrder");
     }),
   );
 
@@ -226,13 +219,7 @@ export function registerAgendaTools(
         jobOrder.jobOrderType = { shortCut: params.jobOrderTypeShortCut };
       }
 
-      const result = await client.mutate<ImportPromiseResponse>(UPDATE_JOB_ORDER, { jobOrder });
-      const promise = result.updateJobOrder;
-      if (!promise.isSuccess) {
-        return toolError("Požadavek na aktualizaci zakázky nebyl přijat");
-      }
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_JOB_ORDER, { jobOrder }, "updateJobOrder");
     }),
   );
 
@@ -246,13 +233,7 @@ export function registerAgendaTools(
     withErrorHandler(async (params) => {
       const jobOrder = cleanInput({ id: params.id, year: params.year });
 
-      const result = await client.mutate<ImportPromiseResponse>(DELETE_JOB_ORDER, { jobOrder });
-      const promise = result.deleteJobOrder;
-      if (!promise.isSuccess) {
-        return toolError("Požadavek na smazání zakázky nebyl přijat");
-      }
-      const importResult = await client.waitForImport(promise.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_JOB_ORDER, { jobOrder }, "deleteJobOrder");
     }),
   );
 

@@ -7,7 +7,6 @@ import { eqFilter, buildWhere, buildOrder } from "../helpers/filters.js";
 import {
   toolError,
   toolListResponse,
-  toolMutationResponse,
   toolSuccess,
   withErrorHandler,
 } from "../helpers/response.js";
@@ -15,8 +14,8 @@ import {
   paginationFields,
   cleanInput,
   type CollectionResponse,
-  type ImportPromiseResponse,
 } from "../helpers/types.js";
+import { executeMutationWithCheck } from "../helpers/mutation.js";
 import { LIST_COMPANIES, GET_COMPANY } from "../graphql/queries/companies.js";
 import {
   CREATE_COMPANY,
@@ -185,17 +184,7 @@ export function registerCompanyTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_COMPANY,
-        { company },
-      );
-
-      if (!result.createCompany.isSuccess) {
-        return toolError("Požadavek na vytvoření firmy nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createCompany.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_COMPANY, { company }, "createCompany");
     }),
   );
 
@@ -285,17 +274,7 @@ export function registerCompanyTools(
       if (params.note !== undefined)
         company.note = params.note;
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_COMPANY,
-        { company },
-      );
-
-      if (!result.updateCompany.isSuccess) {
-        return toolError("Požadavek na aktualizaci firmy nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateCompany.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_COMPANY, { company }, "updateCompany");
     }),
   );
 
@@ -309,17 +288,7 @@ export function registerCompanyTools(
       id: z.number().describe("ID firmy ke smazání"),
     },
     withErrorHandler(async (params) => {
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_COMPANY,
-        { company: { id: params.id } },
-      );
-
-      if (!result.deleteCompany.isSuccess) {
-        return toolError("Požadavek na smazání firmy nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteCompany.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_COMPANY, { company: { id: params.id } }, "deleteCompany");
     }),
   );
 }

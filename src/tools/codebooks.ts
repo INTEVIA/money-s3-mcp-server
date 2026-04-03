@@ -4,16 +4,14 @@ import type { MoneyS3Client } from "../graphql/client.js";
 import { toPaginationArgs } from "../helpers/pagination.js";
 import { eqFilter, buildWhere, buildOrder } from "../helpers/filters.js";
 import {
-  toolError,
   toolListResponse,
-  toolMutationResponse,
   withErrorHandler,
 } from "../helpers/response.js";
+import { executeMutationWithCheck } from "../helpers/mutation.js";
 import {
   paginationFields,
   cleanInput,
   type CollectionResponse,
-  type ImportPromiseResponse,
 } from "../helpers/types.js";
 import {
   LIST_CURRENCIES,
@@ -358,26 +356,16 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_OPERATION,
-        { operation },
-      );
-
-      if (!result.createOperation.isSuccess) {
-        return toolError("Požadavek na vytvoření činnosti nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createOperation.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_OPERATION, { operation }, "createOperation");
     }),
   );
 
   server.tool(
     "update_operation",
-    "Aktualizuje existující činnost v číselníku",
+    "Aktualizuje existující činnost v číselníku (identifikace dle zkratky)",
     {
-      shortCut: z.string().optional().describe("Zkratka činnosti"),
-      name: z.string().optional().describe("Název činnosti"),
+      shortCut: z.string().describe("Zkratka činnosti (identifikátor)"),
+      name: z.string().optional().describe("Nový název činnosti"),
       note: z.string().optional().describe("Poznámka"),
     },
     withErrorHandler(async (params) => {
@@ -387,17 +375,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_OPERATION,
-        { operation },
-      );
-
-      if (!result.updateOperation.isSuccess) {
-        return toolError("Požadavek na aktualizaci činnosti nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateOperation.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_OPERATION, { operation }, "updateOperation");
     }),
   );
 
@@ -414,17 +392,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_OPERATION,
-        { operation },
-      );
-
-      if (!result.deleteOperation.isSuccess) {
-        return toolError("Požadavek na smazání činnosti nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteOperation.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_OPERATION, { operation }, "deleteOperation");
     }),
   );
 
@@ -451,17 +419,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_VAT_CLASSIFICATION,
-        { vatClassification },
-      );
-
-      if (!result.createVatClassification.isSuccess) {
-        return toolError("Požadavek na vytvoření členění DPH nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createVatClassification.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_VAT_CLASSIFICATION, { vatClassification }, "createVatClassification");
     }),
   );
 
@@ -484,17 +442,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_VAT_CLASSIFICATION,
-        { vatClassification },
-      );
-
-      if (!result.updateVatClassification.isSuccess) {
-        return toolError("Požadavek na aktualizaci členění DPH nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateVatClassification.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_VAT_CLASSIFICATION, { vatClassification }, "updateVatClassification");
     }),
   );
 
@@ -511,17 +459,7 @@ export function registerCodebookTools(
         dateFrom: params.dateFrom,
       };
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_VAT_CLASSIFICATION,
-        { vatClassification },
-      );
-
-      if (!result.deleteVatClassification.isSuccess) {
-        return toolError("Požadavek na smazání členění DPH nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteVatClassification.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_VAT_CLASSIFICATION, { vatClassification }, "deleteVatClassification");
     }),
   );
 
@@ -546,17 +484,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_VAT_ACCOUNTING_ACC,
-        { vatAccountingAcc },
-      );
-
-      if (!result.createVatAccountingAcc.isSuccess) {
-        return toolError("Požadavek na vytvoření účtování DPH (Acc) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createVatAccountingAcc.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_VAT_ACCOUNTING_ACC, { vatAccountingAcc }, "createVatAccountingAcc");
     }),
   );
 
@@ -577,17 +505,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_VAT_ACCOUNTING_ACC,
-        { vatAccountingAcc },
-      );
-
-      if (!result.updateVatAccountingAcc.isSuccess) {
-        return toolError("Požadavek na aktualizaci účtování DPH (Acc) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateVatAccountingAcc.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_VAT_ACCOUNTING_ACC, { vatAccountingAcc }, "updateVatAccountingAcc");
     }),
   );
 
@@ -604,17 +522,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_VAT_ACCOUNTING_ACC,
-        { vatAccountingAcc },
-      );
-
-      if (!result.deleteVatAccountingAcc.isSuccess) {
-        return toolError("Požadavek na smazání účtování DPH (Acc) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteVatAccountingAcc.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_VAT_ACCOUNTING_ACC, { vatAccountingAcc }, "deleteVatAccountingAcc");
     }),
   );
 
@@ -639,17 +547,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_VAT_ACCOUNTING_TR,
-        { vatAccountingTr },
-      );
-
-      if (!result.createVatAccountingTr.isSuccess) {
-        return toolError("Požadavek na vytvoření účtování DPH (Tr) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createVatAccountingTr.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_VAT_ACCOUNTING_TR, { vatAccountingTr }, "createVatAccountingTr");
     }),
   );
 
@@ -670,17 +568,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_VAT_ACCOUNTING_TR,
-        { vatAccountingTr },
-      );
-
-      if (!result.updateVatAccountingTr.isSuccess) {
-        return toolError("Požadavek na aktualizaci účtování DPH (Tr) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateVatAccountingTr.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_VAT_ACCOUNTING_TR, { vatAccountingTr }, "updateVatAccountingTr");
     }),
   );
 
@@ -697,17 +585,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_VAT_ACCOUNTING_TR,
-        { vatAccountingTr },
-      );
-
-      if (!result.deleteVatAccountingTr.isSuccess) {
-        return toolError("Požadavek na smazání účtování DPH (Tr) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteVatAccountingTr.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_VAT_ACCOUNTING_TR, { vatAccountingTr }, "deleteVatAccountingTr");
     }),
   );
 
@@ -734,17 +612,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_ACCOUNT_ASSIGNMENT_ACC,
-        { accountAssignmentAcc },
-      );
-
-      if (!result.createAccountAssignmentAcc.isSuccess) {
-        return toolError("Požadavek na vytvoření předkontace (Acc) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createAccountAssignmentAcc.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_ACCOUNT_ASSIGNMENT_ACC, { accountAssignmentAcc }, "createAccountAssignmentAcc");
     }),
   );
 
@@ -765,17 +633,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_ACCOUNT_ASSIGNMENT_ACC,
-        { accountAssignmentAcc },
-      );
-
-      if (!result.updateAccountAssignmentAcc.isSuccess) {
-        return toolError("Požadavek na aktualizaci předkontace (Acc) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateAccountAssignmentAcc.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_ACCOUNT_ASSIGNMENT_ACC, { accountAssignmentAcc }, "updateAccountAssignmentAcc");
     }),
   );
 
@@ -792,17 +650,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_ACCOUNT_ASSIGNMENT_ACC,
-        { accountAssignmentAcc },
-      );
-
-      if (!result.deleteAccountAssignmentAcc.isSuccess) {
-        return toolError("Požadavek na smazání předkontace (Acc) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteAccountAssignmentAcc.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_ACCOUNT_ASSIGNMENT_ACC, { accountAssignmentAcc }, "deleteAccountAssignmentAcc");
     }),
   );
 
@@ -829,17 +677,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_ACCOUNT_ASSIGNMENT_TR,
-        { accountAssignmentTr },
-      );
-
-      if (!result.createAccountAssignmentTr.isSuccess) {
-        return toolError("Požadavek na vytvoření předkontace (Tr) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createAccountAssignmentTr.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_ACCOUNT_ASSIGNMENT_TR, { accountAssignmentTr }, "createAccountAssignmentTr");
     }),
   );
 
@@ -860,17 +698,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_ACCOUNT_ASSIGNMENT_TR,
-        { accountAssignmentTr },
-      );
-
-      if (!result.updateAccountAssignmentTr.isSuccess) {
-        return toolError("Požadavek na aktualizaci předkontace (Tr) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateAccountAssignmentTr.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_ACCOUNT_ASSIGNMENT_TR, { accountAssignmentTr }, "updateAccountAssignmentTr");
     }),
   );
 
@@ -887,17 +715,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_ACCOUNT_ASSIGNMENT_TR,
-        { accountAssignmentTr },
-      );
-
-      if (!result.deleteAccountAssignmentTr.isSuccess) {
-        return toolError("Požadavek na smazání předkontace (Tr) nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteAccountAssignmentTr.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_ACCOUNT_ASSIGNMENT_TR, { accountAssignmentTr }, "deleteAccountAssignmentTr");
     }),
   );
 
@@ -924,17 +742,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_ACCOUNT_CHART,
-        { accountChart },
-      );
-
-      if (!result.createAccountChart.isSuccess) {
-        return toolError("Požadavek na vytvoření účtu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createAccountChart.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_ACCOUNT_CHART, { accountChart }, "createAccountChart");
     }),
   );
 
@@ -955,17 +763,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_ACCOUNT_CHART,
-        { accountChart },
-      );
-
-      if (!result.updateAccountChart.isSuccess) {
-        return toolError("Požadavek na aktualizaci účtu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateAccountChart.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_ACCOUNT_CHART, { accountChart }, "updateAccountChart");
     }),
   );
 
@@ -982,17 +780,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_ACCOUNT_CHART,
-        { accountChart },
-      );
-
-      if (!result.deleteAccountChart.isSuccess) {
-        return toolError("Požadavek na smazání účtu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteAccountChart.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_ACCOUNT_CHART, { accountChart }, "deleteAccountChart");
     }),
   );
 
@@ -1021,17 +809,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_ACCOUNT_MOVEMENT,
-        { accountMovement },
-      );
-
-      if (!result.createAccountMovement.isSuccess) {
-        return toolError("Požadavek na vytvoření účetního pohybu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createAccountMovement.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_ACCOUNT_MOVEMENT, { accountMovement }, "createAccountMovement");
     }),
   );
 
@@ -1054,17 +832,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_ACCOUNT_MOVEMENT,
-        { accountMovement },
-      );
-
-      if (!result.updateAccountMovement.isSuccess) {
-        return toolError("Požadavek na aktualizaci účetního pohybu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateAccountMovement.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_ACCOUNT_MOVEMENT, { accountMovement }, "updateAccountMovement");
     }),
   );
 
@@ -1081,17 +849,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_ACCOUNT_MOVEMENT,
-        { accountMovement },
-      );
-
-      if (!result.deleteAccountMovement.isSuccess) {
-        return toolError("Požadavek na smazání účetního pohybu nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteAccountMovement.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_ACCOUNT_MOVEMENT, { accountMovement }, "deleteAccountMovement");
     }),
   );
 
@@ -1114,26 +872,16 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_CENTRE,
-        { centre },
-      );
-
-      if (!result.createCentre.isSuccess) {
-        return toolError("Požadavek na vytvoření střediska nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createCentre.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_CENTRE, { centre }, "createCentre");
     }),
   );
 
   server.tool(
     "update_centre",
-    "Aktualizuje existující středisko v číselníku",
+    "Aktualizuje existující středisko v číselníku (identifikace dle zkratky)",
     {
-      shortCut: z.string().optional().describe("Zkratka střediska"),
-      name: z.string().optional().describe("Název střediska"),
+      shortCut: z.string().describe("Zkratka střediska (identifikátor)"),
+      name: z.string().optional().describe("Nový název střediska"),
       note: z.string().optional().describe("Poznámka"),
     },
     withErrorHandler(async (params) => {
@@ -1143,17 +891,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_CENTRE,
-        { centre },
-      );
-
-      if (!result.updateCentre.isSuccess) {
-        return toolError("Požadavek na aktualizaci střediska nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateCentre.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_CENTRE, { centre }, "updateCentre");
     }),
   );
 
@@ -1170,17 +908,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_CENTRE,
-        { centre },
-      );
-
-      if (!result.deleteCentre.isSuccess) {
-        return toolError("Požadavek na smazání střediska nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteCentre.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_CENTRE, { centre }, "deleteCentre");
     }),
   );
 
@@ -1209,17 +937,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_BANK_ACCOUNT_CASH_BOX,
-        { bankAccountCashBox },
-      );
-
-      if (!result.createBankAccountCashBox.isSuccess) {
-        return toolError("Požadavek na vytvoření bankovního účtu/pokladny nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createBankAccountCashBox.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_BANK_ACCOUNT_CASH_BOX, { bankAccountCashBox }, "createBankAccountCashBox");
     }),
   );
 
@@ -1244,17 +962,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_BANK_ACCOUNT_CASH_BOX,
-        { bankAccountCashBox },
-      );
-
-      if (!result.updateBankAccountCashBox.isSuccess) {
-        return toolError("Požadavek na aktualizaci bankovního účtu/pokladny nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateBankAccountCashBox.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_BANK_ACCOUNT_CASH_BOX, { bankAccountCashBox }, "updateBankAccountCashBox");
     }),
   );
 
@@ -1271,17 +979,7 @@ export function registerCodebookTools(
         year: params.year,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_BANK_ACCOUNT_CASH_BOX,
-        { bankAccountCashBox },
-      );
-
-      if (!result.deleteBankAccountCashBox.isSuccess) {
-        return toolError("Požadavek na smazání bankovního účtu/pokladny nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteBankAccountCashBox.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_BANK_ACCOUNT_CASH_BOX, { bankAccountCashBox }, "deleteBankAccountCashBox");
     }),
   );
 
@@ -1306,17 +1004,7 @@ export function registerCodebookTools(
         note: params.note,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        CREATE_PARAMETER,
-        { parameter },
-      );
-
-      if (!result.createParameter.isSuccess) {
-        return toolError("Požadavek na vytvoření parametru nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.createParameter.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, CREATE_PARAMETER, { parameter }, "createParameter");
     }),
   );
 
@@ -1335,17 +1023,7 @@ export function registerCodebookTools(
         measureUnit: params.measureUnit,
       });
 
-      const result = await client.mutate<ImportPromiseResponse>(
-        UPDATE_PARAMETER,
-        { parameter },
-      );
-
-      if (!result.updateParameter.isSuccess) {
-        return toolError("Požadavek na aktualizaci parametru nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.updateParameter.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, UPDATE_PARAMETER, { parameter }, "updateParameter");
     }),
   );
 
@@ -1356,17 +1034,7 @@ export function registerCodebookTools(
       id: z.number().describe("ID parametru ke smazání"),
     },
     withErrorHandler(async (params) => {
-      const result = await client.mutate<ImportPromiseResponse>(
-        DELETE_PARAMETER,
-        { parameter: { id: params.id } },
-      );
-
-      if (!result.deleteParameter.isSuccess) {
-        return toolError("Požadavek na smazání parametru nebyl přijat");
-      }
-
-      const importResult = await client.waitForImport(result.deleteParameter.guid);
-      return toolMutationResponse(importResult);
+      return executeMutationWithCheck(client, DELETE_PARAMETER, { parameter: { id: params.id } }, "deleteParameter");
     }),
   );
 }
